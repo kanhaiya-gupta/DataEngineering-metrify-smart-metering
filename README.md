@@ -6,7 +6,7 @@ Transform millions of smart meters into actionable insights with our enterprise-
 
 > **⚠️ PROPRIETARY SOFTWARE**: This is proprietary software owned by Metrify. Unauthorized use, distribution, or modification is strictly prohibited. For licensing inquiries, contact licensing@metrify.com
 
-## 🎯 System Overview
+## 🎯 Core System Overview
 
 ```mermaid
 graph TB
@@ -28,37 +28,29 @@ graph TB
         API[FastAPI Services<br/>🚀 REST API]
         WORKERS[Background Workers<br/>🔄 Processing & Analytics]
         DBT[dbt Transformations<br/>📊 Data Modeling]
-        ML[ML/AI Engine<br/>🤖 TensorFlow & MLflow]
-        ANALYTICS[Advanced Analytics<br/>📈 Forecasting & Visualization]
     end
 
     %% Storage Layer
     subgraph "💾 Data Storage"
         POSTGRES[(PostgreSQL<br/>🗄️ Operational DB)]
         SNOWFLAKE[(Snowflake<br/>❄️ Data Warehouse)]
-        S3[(Multi-Cloud Storage<br/>☁️ AWS/Azure/GCP)]
-        CACHE[(Redis Cache<br/>⚡ Multi-level Caching)]
+        S3[(AWS S3<br/>☁️ Data Lake)]
+    end
+
+    %% Monitoring & Observability
+    subgraph "📈 Monitoring & Observability"
+        DATADOG[DataDog<br/>📊 Metrics & Logs]
+        PROMETHEUS[Prometheus<br/>📈 Metrics Collection]
+        GRAFANA[Grafana<br/>📊 Dashboards]
+        JAEGER[Jaeger<br/>🔍 Distributed Tracing]
     end
 
     %% Infrastructure
     subgraph "🏗️ Infrastructure"
         DOCKER[Docker<br/>🐳 Containerization]
         K8S[Kubernetes<br/>☸️ Orchestration]
-        TERRAFORM[Multi-Cloud Terraform<br/>🏗️ AWS/Azure/GCP]
-        FLINK[Apache Flink<br/>⚡ Stream Processing]
+        TERRAFORM[Terraform<br/>🏗️ Infrastructure as Code]
     end
-
-    %% Monitoring & Observability
-    subgraph "📈 Monitoring & Observability"
-        PROMETHEUS[Prometheus<br/>📈 Metrics Collection]
-        GRAFANA[Grafana<br/>📊 Dashboards]
-        JAEGER[Jaeger<br/>🔍 Distributed Tracing]
-        QUALITY[Data Quality<br/>✅ Great Expectations]
-        GOVERNANCE[Data Governance<br/>🏛️ Apache Atlas]
-    end
-
-    %% DataDog - Separate on the right
-    DATADOG[DataDog<br/>📊 Metrics & Logs]
 
     %% Data Flow
     SM --> KAFKA
@@ -67,45 +59,27 @@ graph TB
     
     KAFKA --> API
     KAFKA --> WORKERS
-    KAFKA --> FLINK
     AIRFLOW --> WORKERS
     
     API --> POSTGRES
     WORKERS --> POSTGRES
     WORKERS --> SNOWFLAKE
     WORKERS --> S3
-    WORKERS --> CACHE
-    
-    ML --> POSTGRES
-    ML --> SNOWFLAKE
-    ANALYTICS --> POSTGRES
-    ANALYTICS --> SNOWFLAKE
     
     DBT --> SNOWFLAKE
-    FLINK --> POSTGRES
-    FLINK --> S3
     
     %% Monitoring connections
     API --> DATADOG
     WORKERS --> DATADOG
-    ML --> DATADOG
-    ANALYTICS --> DATADOG
     KAFKA --> PROMETHEUS
-    FLINK --> PROMETHEUS
     POSTGRES --> GRAFANA
     SNOWFLAKE --> GRAFANA
-    CACHE --> GRAFANA
-    QUALITY --> GRAFANA
-    GOVERNANCE --> GRAFANA
     
     %% Infrastructure connections
     API --> DOCKER
     WORKERS --> DOCKER
-    ML --> DOCKER
-    ANALYTICS --> DOCKER
     DOCKER --> K8S
     K8S --> TERRAFORM
-    FLINK --> K8S
 
     %% Styling
     classDef dataSource fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -115,11 +89,15 @@ graph TB
     classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px
 
     class SM,GO,WS dataSource
-    class KAFKA,AIRFLOW,API,WORKERS,DBT,ML,ANALYTICS processing
-    class POSTGRES,SNOWFLAKE,S3,CACHE storage
-    class DATADOG,PROMETHEUS,GRAFANA,JAEGER,QUALITY,GOVERNANCE monitoring
-    class DOCKER,K8S,TERRAFORM,FLINK infrastructure
+    class KAFKA,AIRFLOW,API,WORKERS,DBT processing
+    class POSTGRES,SNOWFLAKE,S3 storage
+    class DATADOG,PROMETHEUS,GRAFANA,JAEGER monitoring
+    class DOCKER,K8S,TERRAFORM infrastructure
 ```
+
+## 🚀 Comprehensive System Overview
+
+*For a detailed view with all advanced features including ML/AI, Advanced Analytics, Data Governance, Performance Optimization, and Multi-Cloud Architecture, see the [Comprehensive System Overview](docs/README.md#comprehensive-system-overview).*
 
 ## 🚀 Key Features
 

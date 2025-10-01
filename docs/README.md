@@ -8,53 +8,51 @@ Welcome to the comprehensive documentation for the Metrify Smart Metering data p
 graph TB
     %% Data Sources
     subgraph "📊 Data Sources"
-        SM[Smart Meters<br/>⚡ Real-time Readings]
-        GO[Grid Operators<br/>🔌 TenneT, 50Hertz, Amprion]
-        WS[Weather Stations<br/>🌤️ DWD, OpenWeatherMap]
-        SOLAR[Solar Panels<br/>☀️ Renewable Generation]
+        SM[Smart Meters<br/>⚡ Real-time]
+        GO[Grid Operators<br/>🔌 TenneT, 50Hertz]
+        WS[Weather Stations<br/>🌤️ DWD, OpenWeather]
+        SOLAR[Solar Panels<br/>☀️ Renewable]
     end
 
     %% Data Ingestion Layer
     subgraph "🌊 Data Ingestion"
-        KAFKA[Apache Kafka<br/>📡 Real-time Streaming]
-        AIRFLOW[Apache Airflow<br/>⏰ Workflow Orchestration]
+        KAFKA[Apache Kafka<br/>📡 Streaming]
+        AIRFLOW[Apache Airflow<br/>⏰ Orchestration]
         FLINK[Apache Flink<br/>⚡ Stream Processing]
     end
 
     %% Processing Layer
     subgraph "⚙️ Data Processing"
         API[FastAPI Services<br/>🚀 REST API]
-        WORKERS[Background Workers<br/>🔄 Processing & Analytics]
-        DBT[dbt Transformations<br/>📊 Data Modeling]
-        ML[ML/AI Engine<br/>🤖 TensorFlow & MLflow]
-        ANALYTICS[Advanced Analytics<br/>📈 Forecasting & Visualization]
+        WORKERS[Background Workers<br/>🔄 Processing]
+        DBT[dbt Transformations<br/>📊 Modeling]
+        ML[ML/AI Engine<br/>🤖 TensorFlow]
+        ANALYTICS[Advanced Analytics<br/>📈 Forecasting]
     end
 
     %% Storage Layer
     subgraph "💾 Data Storage"
-        POSTGRES[(PostgreSQL<br/>🗄️ Operational DB)]
-        SNOWFLAKE[(Snowflake<br/>❄️ Data Warehouse)]
-        S3[(Multi-Cloud Storage<br/>☁️ AWS/Azure/GCP)]
-        CACHE[(Redis Cache<br/>⚡ Multi-level Caching)]
+        POSTGRES[(PostgreSQL<br/>🗄️ Operational)]
+        SNOWFLAKE[(Snowflake<br/>❄️ Warehouse)]
+        S3[(Multi-Cloud<br/>☁️ AWS/Azure/GCP)]
+        CACHE[(Redis Cache<br/>⚡ Caching)]
     end
 
     %% Monitoring & Observability
     subgraph "📈 Monitoring & Observability"
-        PROMETHEUS[Prometheus<br/>📈 Metrics Collection]
+        DATADOG[DataDog<br/>📊 Metrics]
+        PROMETHEUS[Prometheus<br/>📈 Collection]
         GRAFANA[Grafana<br/>📊 Dashboards]
-        JAEGER[Jaeger<br/>🔍 Distributed Tracing]
-        QUALITY[Data Quality<br/>✅ Great Expectations]
-        GOVERNANCE[Data Governance<br/>🏛️ Apache Atlas]
+        JAEGER[Jaeger<br/>🔍 Tracing]
+        QUALITY[Data Quality<br/>✅ Validation]
+        GOVERNANCE[Data Governance<br/>🏛️ Atlas]
     end
-
-    %% DataDog - Separate on the right
-    DATADOG[DataDog<br/>📊 Metrics & Logs]
 
     %% Infrastructure
     subgraph "🏗️ Infrastructure"
         DOCKER[Docker<br/>🐳 Containerization]
         K8S[Kubernetes<br/>☸️ Orchestration]
-        TERRAFORM[Multi-Cloud Terraform<br/>🏗️ AWS/Azure/GCP]
+        TERRAFORM[Multi-Cloud Terraform<br/>🏗️ IaC]
         PERFORMANCE[Performance<br/>⚡ Optimization]
     end
 
@@ -120,6 +118,163 @@ graph TB
     class DATADOG,PROMETHEUS,GRAFANA,JAEGER,QUALITY,GOVERNANCE monitoring
     class DOCKER,K8S,TERRAFORM,PERFORMANCE infrastructure
 ```
+
+## 🚀 Comprehensive System Overview
+
+*This comprehensive view shows all advanced features including ML/AI, Advanced Analytics, Data Governance, Performance Optimization, and Multi-Cloud Architecture.*
+
+```mermaid
+graph TB
+    %% Data Sources
+    subgraph "📊 Data Sources"
+        SM[Smart Meters<br/>⚡ Real-time]
+        GO[Grid Operators<br/>🔌 TenneT, 50Hertz]
+        WS[Weather Stations<br/>🌤️ DWD, OpenWeather]
+        SOLAR[Solar Panels<br/>☀️ Renewable]
+    end
+
+    %% Data Ingestion Layer
+    subgraph "🌊 Data Ingestion"
+        KAFKA[Apache Kafka<br/>📡 Streaming]
+        AIRFLOW[Apache Airflow<br/>⏰ Orchestration]
+        FLINK[Apache Flink<br/>⚡ Stream Processing]
+    end
+
+    %% Processing Layer
+    subgraph "⚙️ Data Processing"
+        API[FastAPI Services<br/>🚀 REST API]
+        WORKERS[Background Workers<br/>🔄 Processing]
+        DBT[dbt Transformations<br/>📊 Modeling]
+        ML[ML/AI Engine<br/>🤖 TensorFlow]
+        ANALYTICS[Advanced Analytics<br/>📈 Forecasting]
+    end
+
+    %% Storage Layer
+    subgraph "💾 Data Storage"
+        POSTGRES[(PostgreSQL<br/>🗄️ Operational)]
+        SNOWFLAKE[(Snowflake<br/>❄️ Warehouse)]
+        S3[(Multi-Cloud<br/>☁️ AWS/Azure/GCP)]
+        CACHE[(Redis Cache<br/>⚡ Caching)]
+    end
+
+    %% Monitoring & Observability
+    subgraph "📈 Monitoring & Observability"
+        DATADOG[DataDog<br/>📊 Metrics]
+        PROMETHEUS[Prometheus<br/>📈 Collection]
+        GRAFANA[Grafana<br/>📊 Dashboards]
+        JAEGER[Jaeger<br/>🔍 Tracing]
+        QUALITY[Data Quality<br/>✅ Validation]
+        GOVERNANCE[Data Governance<br/>🏛️ Atlas]
+    end
+
+    %% Infrastructure
+    subgraph "🏗️ Infrastructure"
+        DOCKER[Docker<br/>🐳 Containerization]
+        K8S[Kubernetes<br/>☸️ Orchestration]
+        TERRAFORM[Multi-Cloud Terraform<br/>🏗️ IaC]
+        PERFORMANCE[Performance<br/>⚡ Optimization]
+    end
+
+    %% Data Flow
+    SM --> KAFKA
+    GO --> KAFKA
+    WS --> KAFKA
+    SOLAR --> KAFKA
+    
+    KAFKA --> API
+    KAFKA --> WORKERS
+    KAFKA --> FLINK
+    AIRFLOW --> WORKERS
+    
+    API --> POSTGRES
+    WORKERS --> POSTGRES
+    WORKERS --> SNOWFLAKE
+    WORKERS --> S3
+    WORKERS --> CACHE
+    
+    ML --> POSTGRES
+    ML --> SNOWFLAKE
+    ANALYTICS --> POSTGRES
+    ANALYTICS --> SNOWFLAKE
+    
+    DBT --> SNOWFLAKE
+    FLINK --> POSTGRES
+    FLINK --> S3
+    
+    %% Monitoring connections
+    API --> DATADOG
+    WORKERS --> DATADOG
+    ML --> DATADOG
+    ANALYTICS --> DATADOG
+    KAFKA --> PROMETHEUS
+    FLINK --> PROMETHEUS
+    POSTGRES --> GRAFANA
+    SNOWFLAKE --> GRAFANA
+    CACHE --> GRAFANA
+    QUALITY --> GRAFANA
+    GOVERNANCE --> GRAFANA
+    
+    %% Infrastructure connections
+    API --> DOCKER
+    WORKERS --> DOCKER
+    ML --> DOCKER
+    ANALYTICS --> DOCKER
+    DOCKER --> K8S
+    K8S --> TERRAFORM
+    FLINK --> K8S
+    PERFORMANCE --> K8S
+
+    %% Styling
+    classDef dataSource fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef processing fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef storage fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef monitoring fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+
+    class SM,GO,WS,SOLAR dataSource
+    class KAFKA,AIRFLOW,API,WORKERS,DBT,ML,ANALYTICS,FLINK processing
+    class POSTGRES,SNOWFLAKE,S3,CACHE storage
+    class DATADOG,PROMETHEUS,GRAFANA,JAEGER,QUALITY,GOVERNANCE monitoring
+    class DOCKER,K8S,TERRAFORM,PERFORMANCE infrastructure
+```
+
+The comprehensive system overview includes all the advanced features we've implemented:
+
+### **🤖 Machine Learning & AI**
+- **TensorFlow & MLflow**: Model development and lifecycle management
+- **Feature Store**: Feast for feature management and serving
+- **Model Serving**: Real-time ML model deployment
+- **Data Drift Detection**: Evidently for model monitoring
+
+### **📈 Advanced Analytics**
+- **Time Series Forecasting**: Prophet and LSTM models
+- **Multivariate Anomaly Detection**: Advanced pattern recognition
+- **Interactive Visualizations**: Plotly and Dash dashboards
+- **Predictive Maintenance**: Equipment health prediction
+
+### **🏛️ Data Governance**
+- **Apache Atlas**: Data catalog and lineage tracking
+- **PII Detection & Masking**: Privacy protection
+- **Compliance Automation**: GDPR and regulatory compliance
+- **Data Classification**: Automatic data categorization
+
+### **🔍 Data Quality Management**
+- **Great Expectations**: Automated data validation
+- **ML-based Quality Prediction**: Intelligent quality scoring
+- **Quality Monitoring**: Real-time quality dashboards
+- **Automated Remediation**: Self-healing data pipelines
+
+### **⚡ Performance Optimization**
+- **Multi-level Caching**: Redis and intelligent caching
+- **Query Optimization**: Database performance tuning
+- **Stream Processing**: Apache Flink integration
+- **Real-time Analytics**: High-performance data processing
+
+### **☁️ Multi-Cloud Architecture**
+- **AWS (eu-central-1)**: Primary cloud infrastructure
+- **Azure (Germany West Central)**: Secondary cloud
+- **GCP (europe-west3)**: Tertiary cloud
+- **Cross-Cloud Replication**: Data synchronization and failover
 
 ## 📚 Documentation Structure
 
