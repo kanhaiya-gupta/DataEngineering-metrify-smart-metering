@@ -1,0 +1,53 @@
+# Kafka Configuration
+# ConfigMap for Kafka connection settings
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metrify-kafka-config
+  namespace: metrify
+  labels:
+    app: metrify
+    component: kafka
+    app.kubernetes.io/name: metrify-kafka
+    app.kubernetes.io/version: "1.0.0"
+data:
+  # Kafka connection settings
+  bootstrap_servers: "kafka-1.metrify.internal:9092,kafka-2.metrify.internal:9092,kafka-3.metrify.internal:9092"
+  security_protocol: "SASL_SSL"
+  sasl_mechanism: "PLAIN"
+  
+  # Producer settings
+  producer_acks: "all"
+  producer_retries: "10"
+  producer_batch_size: "16384"
+  producer_linger_ms: "10"
+  producer_compression_type: "snappy"
+  producer_max_in_flight_requests_per_connection: "5"
+  
+  # Consumer settings
+  consumer_auto_offset_reset: "latest"
+  consumer_enable_auto_commit: "true"
+  consumer_auto_commit_interval_ms: "5000"
+  consumer_max_poll_records: "500"
+  consumer_max_poll_interval_ms: "300000"
+  consumer_session_timeout_ms: "30000"
+  consumer_heartbeat_interval_ms: "10000"
+  
+  # Topic settings
+  smart_meter_data_topic: "smart-meter-data"
+  smart_meter_events_topic: "smart-meter-events"
+  grid_operator_data_topic: "grid-operator-data"
+  grid_status_events_topic: "grid-status-events"
+  weather_data_topic: "weather-data"
+  weather_events_topic: "weather-events"
+  analytics_events_topic: "analytics-events"
+  monitoring_events_topic: "monitoring-events"
+  alert_events_topic: "alert-events"
+  
+  # Topic configuration
+  topic_partitions: "12"
+  topic_replication_factor: "3"
+  topic_retention_hours: "168"
+  topic_compression_type: "snappy"
+  topic_cleanup_policy: "delete"

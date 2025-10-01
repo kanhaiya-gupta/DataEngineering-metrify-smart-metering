@@ -1,0 +1,20 @@
+# Metrify Smart Metering Namespace
+# Production namespace for all Metrify services
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metrify
+  labels:
+    name: metrify
+    environment: production
+    app.kubernetes.io/name: metrify-smart-metering
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: platform
+  annotations:
+    description: "Metrify Smart Metering Data Pipeline Platform"
+    contact: "platform-team@metrify.com"
+    runbook: "https://runbooks.metrify.com/metrify-platform"
+spec:
+  finalizers:
+    - kubernetes

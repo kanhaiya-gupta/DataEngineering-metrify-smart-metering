@@ -1,0 +1,212 @@
+# Metrify Processing Worker Deployment
+# Production deployment for data processing workers
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrify-processing-worker
+  namespace: metrify
+  labels:
+    app: metrify-processing-worker
+    component: worker
+    tier: backend
+    app.kubernetes.io/name: metrify-processing-worker
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: worker
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    description: "Metrify Smart Meter Data Processing Worker"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: metrify-processing-worker
+  template:
+    metadata:
+      labels:
+        app: metrify-processing-worker
+        component: worker
+        tier: backend
+        app.kubernetes.io/name: metrify-processing-worker
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: metrify-worker
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: processing-worker
+        image: metrify/metrify-worker:latest
+        imagePullPolicy: Always
+        command: ["python", "-m", "src.presentation.workers.processing_worker"]
+        ports:
+        - containerPort: 8001
+          name: metrics
+          protocol: TCP
+        env:
+        - name: METRIFY_ENVIRONMENT
+          value: "production"
+        - name: WORKER_TYPE
+          value: "processing"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: metrify-database-secret
+              key: host
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: metrify-database-secret
+              key: database
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: metrify-database-secret
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metrify-database-secret
+              key: password
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: metrify-kafka-config
+              key: bootstrap_servers
+        - name: KAFKA_SECURITY_PROTOCOL
+          valueFrom:
+            configMapKeyRef:
+              name: metrify-kafka-config
+              key: security_protocol
+        - name: KAFKA_SASL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: metrify-kafka-secret
+              key: username
+        - name: KAFKA_SASL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metrify-kafka-secret
+              key: password
+        - name: KAFKA_CONSUMER_GROUP
+          value: "metrify-processing-prod"
+        - name: S3_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: metrify-s3-config
+              key: region
+        - name: S3_BUCKET_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: metrify-s3-config
+              key: bucket_name
+        - name: S3_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: metrify-s3-secret
+              key: access_key_id
+        - name: S3_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: metrify-s3-secret
+              key: secret_access_key
+        - name: SNOWFLAKE_ACCOUNT
+          valueFrom:
+            secretKeyRef:
+              name: metrify-snowflake-secret
+              key: account
+        - name: SNOWFLAKE_WAREHOUSE
+          valueFrom:
+            secretKeyRef:
+              name: metrify-snowflake-secret
+              key: warehouse
+        - name: SNOWFLAKE_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: metrify-snowflake-secret
+              key: database
+        - name: SNOWFLAKE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: metrify-snowflake-secret
+              key: username
+        - name: SNOWFLAKE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: metrify-snowflake-secret
+              key: password
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: metrify-redis-config
+              key: url
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import psutil; exit(0 if psutil.pid_exists(1) else 1)"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import psutil; exit(0 if psutil.pid_exists(1) else 1)"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: config
+        configMap:
+          name: metrify-worker-config
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 50
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - metrify-processing-worker
+              topologyKey: kubernetes.io/hostname

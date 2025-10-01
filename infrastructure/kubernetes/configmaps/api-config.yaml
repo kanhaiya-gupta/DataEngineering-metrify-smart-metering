@@ -1,0 +1,73 @@
+# Metrify API Configuration
+# ConfigMap for API service configuration
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metrify-api-config
+  namespace: metrify
+  labels:
+    app: metrify-api
+    component: api
+    app.kubernetes.io/name: metrify-api
+    app.kubernetes.io/version: "1.0.0"
+data:
+  # Application configuration
+  app_name: "Metrify Smart Metering API"
+  app_version: "1.0.0"
+  environment: "production"
+  debug: "false"
+  log_level: "INFO"
+  
+  # API configuration
+  host: "0.0.0.0"
+  port: "8000"
+  workers: "4"
+  reload: "false"
+  
+  # Performance configuration
+  max_request_size_mb: "100"
+  request_timeout_seconds: "120"
+  rate_limit_per_minute: "10000"
+  
+  # Database configuration
+  db_pool_size: "50"
+  db_max_overflow: "100"
+  db_pool_timeout: "30"
+  db_pool_recycle: "3600"
+  
+  # Kafka configuration
+  kafka_consumer_group: "metrify-api-prod"
+  kafka_auto_offset_reset: "latest"
+  kafka_enable_auto_commit: "true"
+  kafka_session_timeout_ms: "30000"
+  kafka_heartbeat_interval_ms: "10000"
+  
+  # S3 configuration
+  s3_region: "eu-central-1"
+  s3_bucket_name: "metrify-prod-data"
+  s3_use_ssl: "true"
+  
+  # Monitoring configuration
+  prometheus_enabled: "true"
+  prometheus_port: "9090"
+  prometheus_namespace: "metrify_prod"
+  prometheus_subsystem: "smart_metering"
+  
+  # Security configuration
+  jwt_algorithm: "HS256"
+  jwt_expire_minutes: "15"
+  refresh_token_expire_days: "1"
+  password_min_length: "16"
+  max_login_attempts: "3"
+  lockout_duration_minutes: "60"
+  
+  # Feature flags
+  enable_anomaly_detection: "true"
+  enable_weather_correlation: "true"
+  enable_real_time_processing: "true"
+  enable_batch_processing: "true"
+  enable_data_quality_checks: "true"
+  enable_alerting: "true"
+  enable_analytics: "true"
+  enable_forecasting: "true"
