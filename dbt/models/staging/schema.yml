@@ -1,0 +1,239 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw data from various sources"
+    tables:
+      - name: smart_meter_readings
+        description: "Raw smart meter reading data"
+        columns:
+          - name: meter_id
+            description: "Unique identifier for the smart meter"
+            tests:
+              - not_null
+              - unique
+          - name: reading_timestamp
+            description: "Timestamp of the reading"
+            tests:
+              - not_null
+          - name: consumption_kwh
+            description: "Energy consumption in kWh"
+            tests:
+              - not_null
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 0
+                  max_value: 1000
+          - name: quality_score
+            description: "Data quality score"
+            tests:
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 0
+                  max_value: 100
+          - name: is_anomaly
+            description: "Whether the reading is flagged as an anomaly"
+            tests:
+              - accepted_values:
+                  values: [true, false]
+      
+      - name: grid_status
+        description: "Raw grid operator status data"
+        columns:
+          - name: operator_id
+            description: "Unique identifier for the grid operator"
+            tests:
+              - not_null
+              - unique
+          - name: status_timestamp
+            description: "Timestamp of the status update"
+            tests:
+              - not_null
+          - name: grid_frequency_hz
+            description: "Grid frequency in Hz"
+            tests:
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 45
+                  max_value: 65
+          - name: grid_voltage_kv
+            description: "Grid voltage in kV"
+            tests:
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 100
+                  max_value: 500
+          - name: is_grid_stable
+            description: "Whether the grid is stable"
+            tests:
+              - accepted_values:
+                  values: [true, false]
+      
+      - name: weather_observations
+        description: "Raw weather station observation data"
+        columns:
+          - name: station_id
+            description: "Unique identifier for the weather station"
+            tests:
+              - not_null
+              - unique
+          - name: observation_timestamp
+            description: "Timestamp of the observation"
+            tests:
+              - not_null
+          - name: temperature_celsius
+            description: "Temperature in Celsius"
+            tests:
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: -50
+                  max_value: 60
+          - name: humidity_percent
+            description: "Humidity percentage"
+            tests:
+              - dbt_expectations.expect_column_values_to_be_between:
+                  min_value: 0
+                  max_value: 100
+          - name: is_anomaly
+            description: "Whether the observation is flagged as an anomaly"
+            tests:
+              - accepted_values:
+                  values: [true, false]
+
+models:
+  - name: stg_smart_meter_readings
+    description: "Staging model for smart meter readings"
+    columns:
+      - name: meter_id
+        description: "Unique identifier for the smart meter"
+        tests:
+          - not_null
+          - unique
+      - name: reading_timestamp
+        description: "Timestamp of the reading"
+        tests:
+          - not_null
+      - name: consumption_kwh
+        description: "Energy consumption in kWh"
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 1000
+      - name: quality_tier
+        description: "Data quality tier"
+        tests:
+          - accepted_values:
+              values: ['EXCELLENT', 'GOOD', 'FAIR', 'POOR']
+      - name: is_anomaly
+        description: "Whether the reading is flagged as an anomaly"
+        tests:
+          - accepted_values:
+              values: [true, false]
+      - name: is_peak_hour_calculated
+        description: "Whether the reading occurred during peak hours"
+        tests:
+          - accepted_values:
+              values: [true, false]
+      - name: is_weekend_calculated
+        description: "Whether the reading occurred on a weekend"
+        tests:
+          - accepted_values:
+              values: [true, false]
+      - name: consumption_category
+        description: "Consumption category classification"
+        tests:
+          - accepted_values:
+              values: ['ZERO_CONSUMPTION', 'VERY_LOW', 'LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH']
+      - name: quality_flag
+        description: "Data quality flag"
+        tests:
+          - not_null
+  
+  - name: stg_grid_status
+    description: "Staging model for grid operator status"
+    columns:
+      - name: operator_id
+        description: "Unique identifier for the grid operator"
+        tests:
+          - not_null
+          - unique
+      - name: status_timestamp
+        description: "Timestamp of the status update"
+        tests:
+          - not_null
+      - name: grid_frequency_hz
+        description: "Grid frequency in Hz"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 45
+              max_value: 65
+      - name: grid_voltage_kv
+        description: "Grid voltage in kV"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 100
+              max_value: 500
+      - name: is_grid_stable
+        description: "Whether the grid is stable"
+        tests:
+          - accepted_values:
+              values: [true, false]
+      - name: grid_status_classification
+        description: "Grid status classification"
+        tests:
+          - accepted_values:
+              values: ['EMERGENCY', 'OVERLOAD', 'FREQUENCY_ISSUE', 'VOLTAGE_ISSUE', 'STABLE', 'UNKNOWN']
+      - name: load_category
+        description: "Load category classification"
+        tests:
+          - accepted_values:
+              values: ['UNKNOWN', 'NO_LOAD', 'LOW_LOAD', 'MEDIUM_LOAD', 'HIGH_LOAD', 'CRITICAL_LOAD']
+      - name: quality_flag
+        description: "Data quality flag"
+        tests:
+          - not_null
+  
+  - name: stg_weather_data
+    description: "Staging model for weather station data"
+    columns:
+      - name: station_id
+        description: "Unique identifier for the weather station"
+        tests:
+          - not_null
+          - unique
+      - name: observation_timestamp
+        description: "Timestamp of the observation"
+        tests:
+          - not_null
+      - name: temperature_celsius
+        description: "Temperature in Celsius"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: -50
+              max_value: 60
+      - name: humidity_percent
+        description: "Humidity percentage"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100
+      - name: is_anomaly
+        description: "Whether the observation is flagged as an anomaly"
+        tests:
+          - accepted_values:
+              values: [true, false]
+      - name: temperature_category
+        description: "Temperature category classification"
+        tests:
+          - accepted_values:
+              values: ['UNKNOWN', 'VERY_COLD', 'COLD', 'COOL', 'MILD', 'WARM', 'HOT', 'VERY_HOT']
+      - name: humidity_category
+        description: "Humidity category classification"
+        tests:
+          - accepted_values:
+              values: ['UNKNOWN', 'DRY', 'COMFORTABLE', 'MODERATE', 'HUMID']
+      - name: weather_condition
+        description: "Weather condition classification"
+        tests:
+          - accepted_values:
+              values: ['STORMY', 'HEAVY_RAIN', 'RAINY', 'CLOUDY', 'PARTLY_CLOUDY', 'MOSTLY_CLEAR', 'CLEAR']
+      - name: quality_flag
+        description: "Data quality flag"
+        tests:
+          - not_null

@@ -1,0 +1,53 @@
+# dbt requirements for Metrify Smart Metering
+# ===========================================
+# 
+# NOTE: This file is deprecated. All dependencies are now consolidated
+# in the root requirements.txt file. Please use:
+# 
+# pip install -r ../requirements.txt
+#
+# This file is kept for reference only.
+
+# Core dbt packages
+dbt-core==1.7.0
+dbt-postgres==1.7.0
+dbt-snowflake==1.7.0
+
+# dbt utility packages
+dbt-utils==1.1.1
+dbt-expectations==0.9.0
+dbt-codegen==0.12.1
+dbt-audit-helper==0.9.0
+dbt-external-tables==0.8.4
+dbt-date==0.8.0
+dbt-docs==1.7.0
+
+# Database drivers
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
+
+# Data quality and testing
+great-expectations==0.18.8
+pytest==7.4.3
+pytest-dbt==0.1.0
+
+# Documentation and visualization
+jinja2==3.1.2
+
+# Development tools
+pre-commit==3.6.0
+black==23.11.0
+flake8==6.1.0
+isort==5.12.0
+
+# Monitoring and logging
+sentry-sdk==1.38.0
+structlog==23.2.0
+
+# Configuration management
+pyyaml==6.0.1
+python-dotenv==1.0.0
+
+# Data processing
+pandas==2.1.4
+numpy==1.25.2

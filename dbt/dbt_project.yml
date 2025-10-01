@@ -1,0 +1,135 @@
+name: 'metrify_smart_metering'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'metrify_smart_metering'
+
+# These configurations specify where dbt should look for different types of files.
+# The `model-paths` config, for example, states that models in this project should be
+# found in the "models/" directory. You probably won't need to change these!
+model-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"  # directory which will store compiled SQL files
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+# Configuring models
+# Full documentation: https://docs.getdbt.com/docs/configuring-models
+# This setting configures the "on-run-start" and "on-run-end" hooks globally
+on-run-start: "{{ log('Starting dbt run for Metrify Smart Metering', info=true) }}"
+on-run-end: "{{ log('Completed dbt run for Metrify Smart Metering', info=true) }}"
+
+models:
+  metrify_smart_metering:
+    # Config indicated by + and applies to all files under models/example/
+    staging:
+      +materialized: view
+      +schema: staging
+      +tags: ["staging"]
+      smart_meter_readings:
+        +materialized: table
+        +indexes:
+          - columns: ['meter_id', 'reading_timestamp']
+            type: 'btree'
+          - columns: ['reading_timestamp']
+            type: 'btree'
+      grid_status:
+        +materialized: table
+        +indexes:
+          - columns: ['operator_id', 'status_timestamp']
+            type: 'btree'
+          - columns: ['status_timestamp']
+            type: 'btree'
+      weather_data:
+        +materialized: table
+        +indexes:
+          - columns: ['station_id', 'observation_timestamp']
+            type: 'btree'
+          - columns: ['observation_timestamp']
+            type: 'btree'
+    
+    marts:
+      +materialized: table
+      +schema: marts
+      +tags: ["marts"]
+      fct_smart_meter_analytics:
+        +materialized: table
+        +indexes:
+          - columns: ['meter_id', 'date_hour']
+            type: 'btree'
+          - columns: ['date_hour']
+            type: 'btree'
+      dim_meters:
+        +materialized: table
+        +indexes:
+          - columns: ['meter_id']
+            type: 'btree'
+      dim_grid_operators:
+        +materialized: table
+        +indexes:
+          - columns: ['operator_id']
+            type: 'btree'
+      dim_weather_stations:
+        +materialized: table
+        +indexes:
+          - columns: ['station_id']
+            type: 'btree'
+    
+    metrics:
+      +materialized: view
+      +schema: metrics
+      +tags: ["metrics"]
+
+seeds:
+  metrify_smart_metering:
+    +schema: raw
+    +tags: ["seeds"]
+
+tests:
+  metrify_smart_metering:
+    +schema: test_results
+    +tags: ["tests"]
+
+# Variables
+vars:
+  # Environment-specific variables
+  environment: "{{ env_var('DBT_ENVIRONMENT', 'development') }}"
+  
+  # Data quality thresholds
+  data_quality:
+    min_consumption_kwh: 0.0
+    max_consumption_kwh: 1000.0
+    min_temperature_celsius: -50.0
+    max_temperature_celsius: 60.0
+    min_humidity_percent: 0.0
+    max_humidity_percent: 100.0
+  
+  # Business rules
+  business_rules:
+    peak_hours_start: 17
+    peak_hours_end: 21
+    off_peak_hours_start: 22
+    off_peak_hours_end: 6
+    weekend_days: [0, 6]  # Sunday and Saturday
+  
+  # Data retention
+  data_retention:
+    raw_data_days: 90
+    staging_data_days: 365
+    marts_data_days: 1095  # 3 years
+
+# Packages
+packages:
+  - package: dbt-labs/dbt_utils
+    version: 1.1.1
+  - package: calogica/dbt_expectations
+    version: 0.9.0
+  - package: dbt-labs/codegen
+    version: 0.12.1
