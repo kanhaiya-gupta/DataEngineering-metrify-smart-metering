@@ -1,0 +1,71 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: metrify-smart-metering
+  region: eu-central-1
+  version: "1.28"
+
+vpc:
+  cidr: "10.0.0.0/16"
+  subnets:
+    public:
+      eu-central-1a: { cidr: "10.0.0.0/19" }
+      eu-central-1b: { cidr: "10.0.32.0/19" }
+      eu-central-1c: { cidr: "10.0.64.0/19" }
+    private:
+      eu-central-1a: { cidr: "10.0.96.0/19" }
+      eu-central-1b: { cidr: "10.0.128.0/19" }
+      eu-central-1c: { cidr: "10.0.160.0/19" }
+
+nodeGroups:
+  - name: metrify-workers
+    instanceType: m5.large
+    desiredCapacity: 3
+    minSize: 1
+    maxSize: 10
+    volumeSize: 100
+    volumeType: gp3
+    iam:
+      withAddonPolicies:
+        imageBuilder: true
+        autoScaler: true
+        externalDNS: true
+        certManager: true
+        appMesh: true
+        ebs: true
+        fsx: true
+        cloudWatch: true
+    ssh:
+      allow: true
+      publicKeyName: metrify-keypair
+
+managedNodeGroups:
+  - name: metrify-spot
+    instanceType: m5.large
+    desiredCapacity: 2
+    minSize: 0
+    maxSize: 5
+    spot: true
+    volumeSize: 100
+    volumeType: gp3
+
+addons:
+  - name: vpc-cni
+    version: latest
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
+  - name: aws-ebs-csi-driver
+    version: latest
+  - name: aws-efs-csi-driver
+    version: latest
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["*"]
+    logRetentionInDays: 7
+
+secretsEncryption:
+  keyARN: arn:aws:kms:eu-central-1:ACCOUNT_ID:key/KEY_ID

@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tensorflow-serving-config
+  namespace: metrify
+data:
+  model_config_file: |
+    model_config_list {
+      config {
+        name: "consumption_forecasting"
+        base_path: "/models/consumption_forecasting"
+        model_platform: "tensorflow"
+        model_version_policy {
+          all: {}
+        }
+      }
+      config {
+        name: "anomaly_detection"
+        base_path: "/models/anomaly_detection"
+        model_platform: "tensorflow"
+        model_version_policy {
+          all: {}
+        }
+      }
+      config {
+        name: "grid_optimization"
+        base_path: "/models/grid_optimization"
+        model_platform: "tensorflow"
+        model_version_policy {
+          all: {}
+        }
+      }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tensorflow-serving
+  namespace: metrify
+  labels:
+    app: tensorflow-serving
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tensorflow-serving
+  template:
+    metadata:
+      labels:
+        app: tensorflow-serving
+    spec:
+      containers:
+      - name: tensorflow-serving
+        image: tensorflow/serving:2.15.0
+        ports:
+        - containerPort: 8500
+          name: grpc
+        - containerPort: 8501
+          name: rest
+        env:
+        - name: MODEL_NAME
+          value: "consumption_forecasting"
+        - name: MODEL_BASE_PATH
+          value: "/models"
+        - name: MODEL_CONFIG_FILE
+          value: "/etc/tensorflow-serving/model_config_file"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+        - name: config
+          mountPath: /etc/tensorflow-serving
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /v1/models
+            port: 8501
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /v1/models
+            port: 8501
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: config
+        configMap:
+          name: tensorflow-serving-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tensorflow-serving
+  namespace: metrify
+  labels:
+    app: tensorflow-serving
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8500
+    targetPort: 8500
+    protocol: TCP
+    name: grpc
+  - port: 8501
+    targetPort: 8501
+    protocol: TCP
+    name: rest
+  selector:
+    app: tensorflow-serving
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-storage-pvc
+  namespace: metrify
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: gp2

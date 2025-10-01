@@ -28,13 +28,16 @@ graph TB
         API[FastAPI Services<br/>🚀 REST API]
         WORKERS[Background Workers<br/>🔄 Processing & Analytics]
         DBT[dbt Transformations<br/>📊 Data Modeling]
+        ML[ML/AI Engine<br/>🤖 TensorFlow & MLflow]
+        ANALYTICS[Advanced Analytics<br/>📈 Forecasting & Visualization]
     end
 
     %% Storage Layer
     subgraph "💾 Data Storage"
         POSTGRES[(PostgreSQL<br/>🗄️ Operational DB)]
         SNOWFLAKE[(Snowflake<br/>❄️ Data Warehouse)]
-        S3[(AWS S3<br/>☁️ Data Lake)]
+        S3[(Multi-Cloud Storage<br/>☁️ AWS/Azure/GCP)]
+        CACHE[(Redis Cache<br/>⚡ Multi-level Caching)]
     end
 
     %% Monitoring & Observability
@@ -43,13 +46,16 @@ graph TB
         PROMETHEUS[Prometheus<br/>📈 Metrics Collection]
         GRAFANA[Grafana<br/>📊 Dashboards]
         JAEGER[Jaeger<br/>🔍 Distributed Tracing]
+        QUALITY[Data Quality<br/>✅ Great Expectations]
+        GOVERNANCE[Data Governance<br/>🏛️ Apache Atlas]
     end
 
     %% Infrastructure
     subgraph "🏗️ Infrastructure"
         DOCKER[Docker<br/>🐳 Containerization]
         K8S[Kubernetes<br/>☸️ Orchestration]
-        TERRAFORM[Terraform<br/>🏗️ Infrastructure as Code]
+        TERRAFORM[Multi-Cloud Terraform<br/>🏗️ AWS/Azure/GCP]
+        FLINK[Apache Flink<br/>⚡ Stream Processing]
     end
 
     %% Data Flow
@@ -59,27 +65,45 @@ graph TB
     
     KAFKA --> API
     KAFKA --> WORKERS
+    KAFKA --> FLINK
     AIRFLOW --> WORKERS
     
     API --> POSTGRES
     WORKERS --> POSTGRES
     WORKERS --> SNOWFLAKE
     WORKERS --> S3
+    WORKERS --> CACHE
+    
+    ML --> POSTGRES
+    ML --> SNOWFLAKE
+    ANALYTICS --> POSTGRES
+    ANALYTICS --> SNOWFLAKE
     
     DBT --> SNOWFLAKE
+    FLINK --> POSTGRES
+    FLINK --> S3
     
     %% Monitoring connections
     API --> DATADOG
     WORKERS --> DATADOG
+    ML --> DATADOG
+    ANALYTICS --> DATADOG
     KAFKA --> PROMETHEUS
+    FLINK --> PROMETHEUS
     POSTGRES --> GRAFANA
     SNOWFLAKE --> GRAFANA
+    CACHE --> GRAFANA
+    QUALITY --> GRAFANA
+    GOVERNANCE --> GRAFANA
     
     %% Infrastructure connections
     API --> DOCKER
     WORKERS --> DOCKER
+    ML --> DOCKER
+    ANALYTICS --> DOCKER
     DOCKER --> K8S
     K8S --> TERRAFORM
+    FLINK --> K8S
 
     %% Styling
     classDef dataSource fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -89,10 +113,10 @@ graph TB
     classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px
 
     class SM,GO,WS dataSource
-    class KAFKA,AIRFLOW,API,WORKERS,DBT processing
-    class POSTGRES,SNOWFLAKE,S3 storage
-    class DATADOG,PROMETHEUS,GRAFANA,JAEGER monitoring
-    class DOCKER,K8S,TERRAFORM infrastructure
+    class KAFKA,AIRFLOW,API,WORKERS,DBT,ML,ANALYTICS processing
+    class POSTGRES,SNOWFLAKE,S3,CACHE storage
+    class DATADOG,PROMETHEUS,GRAFANA,JAEGER,QUALITY,GOVERNANCE monitoring
+    class DOCKER,K8S,TERRAFORM,FLINK infrastructure
 ```
 
 ## 🚀 Key Features
@@ -111,6 +135,14 @@ graph TB
 - **🌤️ Weather Correlation**: Energy demand forecasting based on weather patterns
 - **🚨 Anomaly Detection**: Automated detection of meter malfunctions and data quality issues
 - **📋 Compliance**: GDPR, energy sector regulations, and audit requirements
+
+### Advanced Features
+- **🤖 Machine Learning & AI**: TensorFlow-based forecasting, anomaly detection, and predictive maintenance
+- **🏛️ Data Governance**: Apache Atlas catalog, data lineage, PII protection, and compliance automation
+- **📈 Advanced Analytics**: Time series forecasting, multivariate analysis, and interactive visualizations
+- **🔍 Data Quality Management**: Great Expectations validation, ML-based quality prediction, and automated remediation
+- **⚡ Performance Optimization**: Multi-level caching, query optimization, and stream processing with Apache Flink
+- **☁️ Multi-Cloud Architecture**: AWS, Azure, and GCP deployment with cross-cloud replication and failover
 
 ## ✨ Why Choose This Solution?
 
@@ -151,34 +183,47 @@ This solution implements a **Clean Architecture** pattern with clear separation 
 ## 🏛️ Clean Architecture Layers
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                       │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐   │
-│  │   REST API  │ │     CLI     │ │   Background        │   │
-│  │             │ │             │ │   Workers           │   │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                   Application Layer                        │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐   │
-│  │  Use Cases  │ │     DTOs    │ │   Event/Command     │   │
-│  │             │ │             │ │   Handlers          │   │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                      Core Layer                            │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐   │
-│  │   Domain    │ │  Services   │ │   Interfaces        │   │
-│  │   Models    │ │             │ │   & Exceptions      │   │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────────┐
-│                 Infrastructure Layer                       │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐   │
-│  │  Database   │ │  External   │ │   Monitoring        │   │
-│  │  & Repos    │ │  Services   │ │   & Logging         │   │
-│  └─────────────┘ └─────────────┘ └─────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           Presentation Layer                                    │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐   │
+│  │   REST API  │ │     CLI     │ │ Background  │ │    ML/Analytics         │   │
+│  │             │ │             │ │  Workers    │ │    Endpoints             │   │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          Application Layer                                     │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐   │
+│  │  Use Cases  │ │     DTOs    │ │   Event/    │ │    ML/Analytics         │   │
+│  │             │ │             │ │  Command    │ │    Services              │   │
+│  │             │ │             │ │  Handlers   │ │                          │   │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            Core Layer                                          │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐   │
+│  │   Domain    │ │  Services   │ │   ML/AI     │ │    Analytics            │   │
+│  │   Models    │ │             │ │   Models    │ │    Engine               │   │
+│  │             │ │             │ │             │ │                         │   │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────────┘   │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐   │
+│  │  Interfaces │ │  Value      │ │  Quality    │ │    Performance          │   │
+│  │  &          │ │  Objects    │ │  Models     │ │    Models               │   │
+│  │  Exceptions │ │             │ │             │ │                         │   │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        Infrastructure Layer                                    │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐   │
+│  │  Database   │ │  External   │ │  Monitoring │ │    Multi-Cloud          │   │
+│  │  & Repos    │ │  Services   │ │  & Logging  │ │    Infrastructure        │   │
+│  │             │ │             │ │             │ │                         │   │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────────┘   │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐   │
+│  │  Caching    │ │  Stream     │ │  Data       │ │    Performance          │   │
+│  │  Layer      │ │  Processing │ │  Governance │ │    Optimization          │   │
+│  │             │ │             │ │             │ │                         │   │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## 📁 Project Structure
@@ -209,14 +254,39 @@ This project follows **Clean Architecture** principles with clear separation of 
 
 ### Data Processing
 - **🌊 Apache Kafka**: Real-time data streaming
-- **⚡ Apache Spark**: Large-scale data processing
+- **⚡ Apache Flink**: Advanced stream processing
 - **🔄 Apache Airflow**: Workflow orchestration
 - **📊 dbt**: Data transformation and modeling
+
+### Machine Learning & AI
+- **🤖 TensorFlow**: Deep learning and ML models
+- **📊 MLflow**: Model lifecycle management
+- **🍽️ Feast**: Feature store and serving
+- **🔍 Evidently**: Data drift detection
+- **📈 SHAP**: Model explainability
+
+### Data Governance & Quality
+- **🏛️ Apache Atlas**: Data catalog and lineage
+- **✅ Great Expectations**: Data validation framework
+- **🔒 Apache Ranger**: Data security and access control
+- **📊 Custom Quality Engine**: Business-specific validations
+
+### Performance & Caching
+- **⚡ Redis**: Multi-level caching
+- **🚀 Apache Flink**: Stream processing optimization
+- **📊 Custom Optimizer**: Query and index optimization
+- **💾 Intelligent Caching**: Predictive cache warming
+
+### Multi-Cloud Infrastructure
+- **☁️ AWS**: Primary cloud (eu-central-1)
+- **☁️ Azure**: Secondary cloud (Germany West Central)
+- **☁️ GCP**: Tertiary cloud (europe-west3)
+- **🔄 Cross-Cloud Replication**: Data synchronization and failover
 
 ### Infrastructure
 - **🐳 Docker**: Containerization
 - **☸️ Kubernetes**: Container orchestration
-- **🏗️ Terraform**: Infrastructure as Code
+- **🏗️ Terraform**: Multi-cloud Infrastructure as Code
 - **📈 DataDog**: Monitoring and observability
 
 ### Development & Testing
@@ -342,6 +412,42 @@ open http://localhost:8000/docs
 - **[Tests and Quality](dbt/tests/)** - Data quality tests and validations
 - **[Macros](dbt/macros/)** - Reusable SQL functions and transformations
 
+### 🤖 Machine Learning & AI
+- **[ML Overview](docs/ml/ml-overview.md)** - Machine learning capabilities and architecture
+- **[Model Training](docs/ml/model-training.md)** - ML model development and training
+- **[Model Deployment](docs/ml/model-deployment.md)** - ML model serving and deployment
+- **[ML Monitoring](docs/ml/ml-monitoring.md)** - ML model monitoring and management
+
+### 🏛️ Data Governance
+- **[Governance Overview](docs/governance/governance-overview.md)** - Data governance framework
+- **[Data Catalog](docs/governance/data-catalog.md)** - Data discovery and cataloging
+- **[Data Lineage](docs/governance/data-lineage.md)** - Data lineage tracking and visualization
+- **[Privacy & Security](docs/governance/privacy-security.md)** - Data protection and compliance
+
+### 📈 Advanced Analytics
+- **[Analytics Overview](docs/analytics/analytics-overview.md)** - Advanced analytics capabilities
+- **[Forecasting Guide](docs/analytics/forecasting-guide.md)** - Time series forecasting
+- **[Anomaly Detection](docs/analytics/anomaly-detection-guide.md)** - Anomaly detection and analysis
+- **[Visualization Guide](docs/analytics/visualization-guide.md)** - Interactive visualizations
+
+### 🔍 Data Quality
+- **[Quality Overview](docs/quality/quality-overview.md)** - Data quality management
+- **[Quality Rules](docs/quality/quality-rules.md)** - Data quality validation rules
+- **[Quality Monitoring](docs/quality/quality-monitoring.md)** - Quality monitoring and alerting
+- **[Quality Automation](docs/quality/quality-automation.md)** - Automated quality processes
+
+### ⚡ Performance Optimization
+- **[Performance Overview](docs/performance/performance-overview.md)** - Performance optimization strategies
+- **[Caching Guide](docs/performance/caching-guide.md)** - Multi-level caching implementation
+- **[Query Optimization](docs/performance/query-optimization-guide.md)** - Database query optimization
+- **[Stream Processing](docs/performance/stream-processing-guide.md)** - Real-time stream processing
+
+### ☁️ Multi-Cloud Architecture
+- **[Multi-Cloud Overview](docs/multicloud/multicloud-overview.md)** - Multi-cloud strategy and implementation
+- **[AWS Deployment](docs/multicloud/aws-deployment.md)** - AWS cloud deployment guide
+- **[Azure Deployment](docs/multicloud/azure-deployment.md)** - Azure cloud deployment guide
+- **[GCP Deployment](docs/multicloud/gcp-deployment.md)** - Google Cloud deployment guide
+
 ## 🎯 Quick Navigation
 
 ### For Business Users
@@ -364,8 +470,33 @@ open http://localhost:8000/docs
 - Start with [Project Structure](docs/project-structure.md) to understand the data pipeline
 - Understand [Data Flow](docs/architecture/data-flow.md)
 - Learn [Data Ingestion](docs/user_guides/data-ingestion-guide.md)
-- Review [Data Quality](docs/user_guides/data-quality-guide.md)
+- Review [Data Quality](docs/quality/quality-overview.md)
 - Explore [dbt Transformations](dbt/README.md)
+- Master [Advanced Analytics](docs/analytics/analytics-overview.md)
+
+### For ML Engineers
+- Start with [ML Overview](docs/ml/ml-overview.md)
+- Learn [Model Training](docs/ml/model-training.md)
+- Deploy [Model Serving](docs/ml/model-deployment.md)
+- Monitor [ML Performance](docs/ml/ml-monitoring.md)
+
+### For Data Governance Teams
+- Understand [Governance Framework](docs/governance/governance-overview.md)
+- Set up [Data Catalog](docs/governance/data-catalog.md)
+- Track [Data Lineage](docs/governance/data-lineage.md)
+- Ensure [Privacy & Security](docs/governance/privacy-security.md)
+
+### For Performance Engineers
+- Optimize [Performance](docs/performance/performance-overview.md)
+- Implement [Caching](docs/performance/caching-guide.md)
+- Tune [Query Performance](docs/performance/query-optimization-guide.md)
+- Scale [Stream Processing](docs/performance/stream-processing-guide.md)
+
+### For Cloud Architects
+- Plan [Multi-Cloud Strategy](docs/multicloud/multicloud-overview.md)
+- Deploy on [AWS](docs/multicloud/aws-deployment.md)
+- Deploy on [Azure](docs/multicloud/azure-deployment.md)
+- Deploy on [GCP](docs/multicloud/gcp-deployment.md)
 
 
 ## 📊 Visual Guides

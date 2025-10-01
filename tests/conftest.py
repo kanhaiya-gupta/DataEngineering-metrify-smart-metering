@@ -7,7 +7,9 @@ import pytest
 import asyncio
 import os
 import tempfile
-from typing import Generator, AsyncGenerator, Dict, Any
+import pandas as pd
+import numpy as np
+from typing import Generator, AsyncGenerator, Dict, Any, List
 from unittest.mock import Mock, AsyncMock
 from datetime import datetime, timedelta
 
@@ -18,7 +20,7 @@ pytest_plugins = ["pytest_asyncio"]
 TEST_DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 # Test database URL
-TEST_DATABASE_URL = "sqlite:///./test_metrify.db"
+TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/metrify_test"
 
 # Test Kafka configuration
 TEST_KAFKA_CONFIG = {
@@ -418,6 +420,331 @@ def performance_test_data():
             for i in range(count)
         ]
     return generate_data
+
+
+# =============================================================================
+# ML/AI Integration Fixtures (Phase 1)
+# =============================================================================
+
+@pytest.fixture
+def mock_mlflow_client():
+    """Mock MLflow client for ML model testing."""
+    client = Mock()
+    client.create_experiment = Mock(return_value="exp_123")
+    client.start_run = Mock()
+    client.log_metric = Mock()
+    client.log_param = Mock()
+    client.log_model = Mock()
+    client.end_run = Mock()
+    client.get_experiment = Mock(return_value={"experiment_id": "exp_123"})
+    client.search_runs = Mock(return_value=[])
+    return client
+
+
+@pytest.fixture
+def mock_tensorflow_model():
+    """Mock TensorFlow model for testing."""
+    model = Mock()
+    model.predict = Mock(return_value=np.array([[0.8, 0.2]]))
+    model.fit = Mock()
+    model.evaluate = Mock(return_value=[0.1, 0.95])
+    model.save = Mock()
+    model.load_weights = Mock()
+    model.compile = Mock()
+    return model
+
+
+@pytest.fixture
+def mock_feature_store():
+    """Mock feature store for testing."""
+    store = Mock()
+    store.get_features = AsyncMock(return_value=pd.DataFrame())
+    store.create_feature_view = AsyncMock()
+    store.get_historical_features = AsyncMock(return_value=pd.DataFrame())
+    store.get_online_features = AsyncMock(return_value=pd.DataFrame())
+    return store
+
+
+@pytest.fixture
+def sample_ml_training_data():
+    """Sample ML training data for testing."""
+    return pd.DataFrame({
+        'meter_id': ['SM001', 'SM002', 'SM003', 'SM004', 'SM005'],
+        'timestamp': pd.date_range('2024-01-01', periods=5, freq='H'),
+        'energy_consumed': [100.5, 150.2, 200.8, 175.3, 225.7],
+        'temperature': [22.5, 23.1, 21.8, 24.2, 22.9],
+        'humidity': [65.2, 68.1, 62.5, 70.3, 66.8],
+        'anomaly_label': [0, 0, 1, 0, 0]
+    })
+
+
+@pytest.fixture
+def sample_model_metrics():
+    """Sample ML model metrics for testing."""
+    return {
+        "accuracy": 0.95,
+        "precision": 0.92,
+        "recall": 0.88,
+        "f1_score": 0.90,
+        "auc_roc": 0.94,
+        "confusion_matrix": [[85, 5], [3, 7]]
+    }
+
+
+# =============================================================================
+# Advanced Analytics Fixtures (Phase 2)
+# =============================================================================
+
+@pytest.fixture
+def mock_analytics_engine():
+    """Mock analytics engine for testing."""
+    engine = Mock()
+    engine.calculate_forecast = AsyncMock(return_value=pd.DataFrame())
+    engine.detect_anomalies = AsyncMock(return_value=pd.DataFrame())
+    engine.analyze_trends = AsyncMock(return_value=pd.DataFrame())
+    engine.calculate_quality_metrics = AsyncMock(return_value={})
+    return engine
+
+
+@pytest.fixture
+def sample_forecast_data():
+    """Sample forecast data for testing."""
+    dates = pd.date_range('2024-01-01', periods=24, freq='H')
+    return pd.DataFrame({
+        'timestamp': dates,
+        'actual': 100 + np.random.randn(24) * 10,
+        'forecast': 100 + np.random.randn(24) * 8,
+        'confidence_lower': 90 + np.random.randn(24) * 5,
+        'confidence_upper': 110 + np.random.randn(24) * 5
+    })
+
+
+@pytest.fixture
+def sample_anomaly_data():
+    """Sample anomaly detection data for testing."""
+    normal_data = np.random.normal(100, 10, 100)
+    anomaly_data = np.array([200, 300, 50, 400])  # Clear anomalies
+    return np.concatenate([normal_data, anomaly_data])
+
+
+@pytest.fixture
+def sample_quality_metrics():
+    """Sample data quality metrics for testing."""
+    return {
+        "completeness": 0.95,
+        "accuracy": 0.92,
+        "consistency": 0.88,
+        "timeliness": 0.90,
+        "validity": 0.94,
+        "overall_score": 0.92
+    }
+
+
+# =============================================================================
+# Event-Driven Architecture Fixtures (Phase 3)
+# =============================================================================
+
+@pytest.fixture
+def mock_event_store():
+    """Mock event store for event sourcing tests."""
+    store = Mock()
+    store.append_events = Mock()
+    store.get_events_for_aggregate = Mock(return_value=[])
+    store.get_current_version = Mock(return_value=0)
+    store.get_all_events = Mock(return_value=[])
+    return store
+
+
+@pytest.fixture
+def mock_command_handler():
+    """Mock command handler for CQRS tests."""
+    handler = Mock()
+    handler.handle = Mock(return_value={"status": "success"})
+    return handler
+
+
+@pytest.fixture
+def mock_query_handler():
+    """Mock query handler for CQRS tests."""
+    handler = Mock()
+    handler.handle = Mock(return_value={"data": []})
+    return handler
+
+
+@pytest.fixture
+def sample_domain_event():
+    """Sample domain event for testing."""
+    return {
+        "event_id": "evt_123",
+        "event_type": "SmartMeterCreated",
+        "aggregate_id": "SM001",
+        "timestamp": datetime.utcnow(),
+        "version": 1,
+        "data": {
+            "meter_id": "SM001",
+            "location": "Berlin",
+            "status": "ACTIVE"
+        }
+    }
+
+
+# =============================================================================
+# Performance Optimization Fixtures (Phase 3)
+# =============================================================================
+
+@pytest.fixture
+def mock_cache_client():
+    """Mock cache client for performance testing."""
+    client = Mock()
+    client.get = Mock(return_value=None)
+    client.set = Mock(return_value=True)
+    client.delete = Mock(return_value=True)
+    client.clear = Mock()
+    client.keys = Mock(return_value=[])
+    return client
+
+
+@pytest.fixture
+def mock_query_optimizer():
+    """Mock query optimizer for testing."""
+    optimizer = Mock()
+    optimizer.optimize_query = Mock(return_value="SELECT * FROM optimized_table")
+    optimizer.analyze_query_performance = Mock(return_value={})
+    optimizer.recommend_indexes = Mock(return_value=[])
+    return optimizer
+
+
+@pytest.fixture
+def mock_index_optimizer():
+    """Mock index optimizer for testing."""
+    optimizer = Mock()
+    optimizer.analyze_index_usage = Mock(return_value={})
+    optimizer.generate_recommendations = Mock(return_value=[])
+    optimizer.create_index = Mock(return_value=True)
+    optimizer.drop_index = Mock(return_value=True)
+    return optimizer
+
+
+@pytest.fixture
+def mock_stream_joiner():
+    """Mock stream joiner for testing."""
+    joiner = Mock()
+    joiner.add_left_record = Mock(return_value=[])
+    joiner.add_right_record = Mock(return_value=[])
+    joiner.get_metrics = Mock(return_value={})
+    return joiner
+
+
+@pytest.fixture
+def mock_real_time_analytics():
+    """Mock real-time analytics for testing."""
+    analytics = Mock()
+    analytics.add_record = Mock(return_value=[])
+    analytics.calculate_windowed_aggregation = Mock(return_value=[])
+    analytics.detect_anomalies = Mock(return_value=[])
+    analytics.analyze_trends = Mock(return_value=[])
+    return analytics
+
+
+# =============================================================================
+# Multi-Cloud Infrastructure Fixtures (Phase 3)
+# =============================================================================
+
+@pytest.fixture
+def mock_aws_client():
+    """Mock AWS client for testing."""
+    client = Mock()
+    client.upload_file = Mock()
+    client.download_file = Mock()
+    client.list_objects_v2 = Mock(return_value={'Contents': []})
+    client.create_bucket = Mock()
+    client.delete_bucket = Mock()
+    return client
+
+
+@pytest.fixture
+def mock_azure_client():
+    """Mock Azure client for testing."""
+    client = Mock()
+    client.upload_blob = Mock()
+    client.download_blob = Mock()
+    client.list_blobs = Mock(return_value=[])
+    client.create_container = Mock()
+    client.delete_container = Mock()
+    return client
+
+
+@pytest.fixture
+def mock_gcp_client():
+    """Mock GCP client for testing."""
+    client = Mock()
+    client.upload_file = Mock()
+    client.download_file = Mock()
+    client.list_objects = Mock(return_value=[])
+    client.create_bucket = Mock()
+    client.delete_bucket = Mock()
+    return client
+
+
+# =============================================================================
+# Data Governance Fixtures (Phase 2)
+# =============================================================================
+
+@pytest.fixture
+def mock_data_catalog():
+    """Mock data catalog for governance testing."""
+    catalog = Mock()
+    catalog.register_dataset = Mock()
+    catalog.get_dataset = Mock(return_value={})
+    catalog.search_datasets = Mock(return_value=[])
+    catalog.update_lineage = Mock()
+    return catalog
+
+
+@pytest.fixture
+def sample_data_lineage():
+    """Sample data lineage for testing."""
+    return {
+        "source": "smart_meter_raw",
+        "transformations": ["data_cleaning", "feature_engineering"],
+        "destination": "analytics_warehouse",
+        "dependencies": ["weather_data", "grid_data"],
+        "last_updated": datetime.utcnow()
+    }
+
+
+# =============================================================================
+# Custom Assertions
+# =============================================================================
+
+def assert_performance_requirement(actual_time: float, max_time: float, operation: str):
+    """Assert that performance requirement is met."""
+    assert actual_time <= max_time, f"{operation} took {actual_time:.3f}s, expected <= {max_time:.3f}s"
+
+
+def assert_data_quality(data: pd.DataFrame, required_columns: List[str], null_threshold: float = 0.1):
+    """Assert data quality requirements."""
+    # Check required columns
+    missing_columns = set(required_columns) - set(data.columns)
+    assert not missing_columns, f"Missing required columns: {missing_columns}"
+    
+    # Check null ratio
+    null_ratio = data.isnull().sum().sum() / (len(data) * len(data.columns))
+    assert null_ratio <= null_threshold, f"Null ratio {null_ratio:.3f} exceeds threshold {null_threshold}"
+
+
+def assert_ml_model_performance(accuracy: float, min_accuracy: float = 0.8):
+    """Assert ML model performance requirements."""
+    assert accuracy >= min_accuracy, f"Model accuracy {accuracy:.3f} below minimum {min_accuracy}"
+
+
+def assert_event_consistency(events: List[Dict], expected_count: int):
+    """Assert event sourcing consistency."""
+    assert len(events) == expected_count, f"Expected {expected_count} events, got {len(events)}"
+    for event in events:
+        assert "event_id" in event, "Event missing event_id"
+        assert "event_type" in event, "Event missing event_type"
+        assert "timestamp" in event, "Event missing timestamp"
 
 
 # Pytest configuration

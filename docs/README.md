@@ -11,12 +11,14 @@ graph TB
         SM[Smart Meters<br/>⚡ Real-time Readings]
         GO[Grid Operators<br/>🔌 TenneT, 50Hertz, Amprion]
         WS[Weather Stations<br/>🌤️ DWD, OpenWeatherMap]
+        SOLAR[Solar Panels<br/>☀️ Renewable Generation]
     end
 
     %% Data Ingestion Layer
     subgraph "🌊 Data Ingestion"
         KAFKA[Apache Kafka<br/>📡 Real-time Streaming]
         AIRFLOW[Apache Airflow<br/>⏰ Workflow Orchestration]
+        FLINK[Apache Flink<br/>⚡ Stream Processing]
     end
 
     %% Processing Layer
@@ -24,13 +26,16 @@ graph TB
         API[FastAPI Services<br/>🚀 REST API]
         WORKERS[Background Workers<br/>🔄 Processing & Analytics]
         DBT[dbt Transformations<br/>📊 Data Modeling]
+        ML[ML/AI Engine<br/>🤖 TensorFlow & MLflow]
+        ANALYTICS[Advanced Analytics<br/>📈 Forecasting & Visualization]
     end
 
     %% Storage Layer
     subgraph "💾 Data Storage"
         POSTGRES[(PostgreSQL<br/>🗄️ Operational DB)]
         SNOWFLAKE[(Snowflake<br/>❄️ Data Warehouse)]
-        S3[(AWS S3<br/>☁️ Data Lake)]
+        S3[(Multi-Cloud Storage<br/>☁️ AWS/Azure/GCP)]
+        CACHE[(Redis Cache<br/>⚡ Multi-level Caching)]
     end
 
     %% Monitoring & Observability
@@ -39,43 +44,66 @@ graph TB
         PROMETHEUS[Prometheus<br/>📈 Metrics Collection]
         GRAFANA[Grafana<br/>📊 Dashboards]
         JAEGER[Jaeger<br/>🔍 Distributed Tracing]
+        QUALITY[Data Quality<br/>✅ Great Expectations]
+        GOVERNANCE[Data Governance<br/>🏛️ Apache Atlas]
     end
 
     %% Infrastructure
     subgraph "🏗️ Infrastructure"
         DOCKER[Docker<br/>🐳 Containerization]
         K8S[Kubernetes<br/>☸️ Orchestration]
-        TERRAFORM[Terraform<br/>🏗️ Infrastructure as Code]
+        TERRAFORM[Multi-Cloud Terraform<br/>🏗️ AWS/Azure/GCP]
+        PERFORMANCE[Performance<br/>⚡ Optimization]
     end
 
     %% Data Flow
     SM --> KAFKA
     GO --> KAFKA
     WS --> KAFKA
+    SOLAR --> KAFKA
     
     KAFKA --> API
     KAFKA --> WORKERS
+    KAFKA --> FLINK
     AIRFLOW --> WORKERS
     
     API --> POSTGRES
     WORKERS --> POSTGRES
     WORKERS --> SNOWFLAKE
     WORKERS --> S3
+    WORKERS --> CACHE
+    
+    ML --> POSTGRES
+    ML --> SNOWFLAKE
+    ANALYTICS --> POSTGRES
+    ANALYTICS --> SNOWFLAKE
     
     DBT --> SNOWFLAKE
+    FLINK --> POSTGRES
+    FLINK --> S3
     
     %% Monitoring connections
     API --> DATADOG
     WORKERS --> DATADOG
+    ML --> DATADOG
+    ANALYTICS --> DATADOG
     KAFKA --> PROMETHEUS
+    FLINK --> PROMETHEUS
     POSTGRES --> GRAFANA
     SNOWFLAKE --> GRAFANA
+    CACHE --> GRAFANA
+    QUALITY --> GRAFANA
+    GOVERNANCE --> GRAFANA
     
     %% Infrastructure connections
     API --> DOCKER
     WORKERS --> DOCKER
+    ML --> DOCKER
+    ANALYTICS --> DOCKER
     DOCKER --> K8S
     K8S --> TERRAFORM
+    FLINK --> K8S
+    PERFORMANCE --> K8S
 
     %% Styling
     classDef dataSource fill:#e1f5fe,stroke:#01579b,stroke-width:2px
@@ -84,11 +112,11 @@ graph TB
     classDef monitoring fill:#fff3e0,stroke:#e65100,stroke-width:2px
     classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px
 
-    class SM,GO,WS dataSource
-    class KAFKA,AIRFLOW,API,WORKERS,DBT processing
-    class POSTGRES,SNOWFLAKE,S3 storage
-    class DATADOG,PROMETHEUS,GRAFANA,JAEGER monitoring
-    class DOCKER,K8S,TERRAFORM infrastructure
+    class SM,GO,WS,SOLAR dataSource
+    class KAFKA,AIRFLOW,API,WORKERS,DBT,ML,ANALYTICS,FLINK processing
+    class POSTGRES,SNOWFLAKE,S3,CACHE storage
+    class DATADOG,PROMETHEUS,GRAFANA,JAEGER,QUALITY,GOVERNANCE monitoring
+    class DOCKER,K8S,TERRAFORM,PERFORMANCE infrastructure
 ```
 
 ## 📚 Documentation Structure
@@ -132,6 +160,42 @@ graph TB
 - **[Data Models](../dbt/models/)** - Staging, marts, and metrics models
 - **[Tests and Quality](../dbt/tests/)** - Data quality tests and validations
 - **[Macros](../dbt/macros/)** - Reusable SQL functions and transformations
+
+### 🤖 Machine Learning & AI
+- **[ML Overview](ml/ml-overview.md)** - Machine learning capabilities and architecture
+- **[Model Training](ml/model-training.md)** - ML model development and training
+- **[Model Deployment](ml/model-deployment.md)** - ML model serving and deployment
+- **[ML Monitoring](ml/ml-monitoring.md)** - ML model monitoring and management
+
+### 🏛️ Data Governance
+- **[Governance Overview](governance/governance-overview.md)** - Data governance framework
+- **[Data Catalog](governance/data-catalog.md)** - Data discovery and cataloging
+- **[Data Lineage](governance/data-lineage.md)** - Data lineage tracking and visualization
+- **[Privacy & Security](governance/privacy-security.md)** - Data protection and compliance
+
+### 📈 Advanced Analytics
+- **[Analytics Overview](analytics/analytics-overview.md)** - Advanced analytics capabilities
+- **[Forecasting Guide](analytics/forecasting-guide.md)** - Time series forecasting
+- **[Anomaly Detection](analytics/anomaly-detection-guide.md)** - Anomaly detection and analysis
+- **[Visualization Guide](analytics/visualization-guide.md)** - Interactive visualizations
+
+### 🔍 Data Quality
+- **[Quality Overview](quality/quality-overview.md)** - Data quality management
+- **[Quality Rules](quality/quality-rules.md)** - Data quality validation rules
+- **[Quality Monitoring](quality/quality-monitoring.md)** - Quality monitoring and alerting
+- **[Quality Automation](quality/quality-automation.md)** - Automated quality processes
+
+### ⚡ Performance Optimization
+- **[Performance Overview](performance/performance-overview.md)** - Performance optimization strategies
+- **[Caching Guide](performance/caching-guide.md)** - Multi-level caching implementation
+- **[Query Optimization](performance/query-optimization-guide.md)** - Database query optimization
+- **[Stream Processing](performance/stream-processing-guide.md)** - Real-time stream processing
+
+### ☁️ Multi-Cloud Architecture
+- **[Multi-Cloud Overview](multicloud/multicloud-overview.md)** - Multi-cloud strategy and implementation
+- **[AWS Deployment](multicloud/aws-deployment.md)** - AWS cloud deployment guide
+- **[Azure Deployment](multicloud/azure-deployment.md)** - Azure cloud deployment guide
+- **[GCP Deployment](multicloud/gcp-deployment.md)** - Google Cloud deployment guide
 
 ## 🎯 Quick Navigation
 

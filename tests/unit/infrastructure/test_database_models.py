@@ -14,7 +14,7 @@ from src.infrastructure.database.models.weather_station_model import WeatherStat
 @pytest.fixture
 def test_engine():
     """Test database engine"""
-    engine = create_engine("sqlite:///:memory:", echo=True)
+    engine = create_engine("postgresql://postgres:postgres@localhost:5432/metrify_test", echo=True)
     return engine
 
 

@@ -250,7 +250,7 @@ class DatabaseTestHelper:
     @staticmethod
     def create_test_database_url() -> str:
         """Create a test database URL"""
-        return "sqlite:///./test_metrify.db"
+        return "postgresql://postgres:postgres@localhost:5432/metrify_test"
     
     @staticmethod
     async def cleanup_test_data(session, table_name: str, condition: str = None):

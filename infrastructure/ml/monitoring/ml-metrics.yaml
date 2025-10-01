@@ -1,0 +1,387 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-metrics-config
+  namespace: metrify
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - "ml_rules.yml"
+
+    scrape_configs:
+      - job_name: 'ml-model-server'
+        static_configs:
+          - targets: ['model-gateway:8080']
+        metrics_path: '/metrics'
+        scrape_interval: 10s
+
+      - job_name: 'tensorflow-serving'
+        static_configs:
+          - targets: ['tensorflow-serving:8501']
+        metrics_path: '/metrics'
+        scrape_interval: 10s
+
+      - job_name: 'mlflow'
+        static_configs:
+          - targets: ['mlflow:5000']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+      - job_name: 'feature-store'
+        static_configs:
+          - targets: ['feature-store:5432']
+        metrics_path: '/metrics'
+        scrape_interval: 30s
+
+  ml_rules.yml: |
+    groups:
+      - name: ml_model_rules
+        rules:
+          - alert: ModelAccuracyLow
+            expr: ml_model_accuracy < 0.9
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Model accuracy is below 90%"
+              description: "Model {{ $labels.model_name }} accuracy is {{ $value }}"
+
+          - alert: ModelLatencyHigh
+            expr: ml_model_latency_seconds > 0.1
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Model latency is high"
+              description: "Model {{ $labels.model_name }} latency is {{ $value }}s"
+
+          - alert: ModelErrorRateHigh
+            expr: rate(ml_model_errors_total[5m]) > 0.05
+            for: 3m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Model error rate is high"
+              description: "Model {{ $labels.model_name }} error rate is {{ $value }}"
+
+          - alert: DataDriftDetected
+            expr: ml_data_drift_score > 0.2
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Data drift detected"
+              description: "Feature {{ $labels.feature_name }} drift score is {{ $value }}"
+
+          - alert: ModelDriftDetected
+            expr: ml_model_drift_score > 0.15
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Model drift detected"
+              description: "Model {{ $labels.model_name }} drift score is {{ $value }}"
+
+          - alert: FeatureStoreDown
+            expr: up{job="feature-store"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Feature store is down"
+              description: "Feature store has been down for more than 1 minute"
+
+          - alert: MLflowDown
+            expr: up{job="mlflow"} == 0
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "MLflow is down"
+              description: "MLflow has been down for more than 2 minutes"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: metrify
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:latest
+        ports:
+        - containerPort: 9090
+          name: web
+        args:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus/'
+          - '--web.console.libraries=/etc/prometheus/console_libraries'
+          - '--web.console.templates=/etc/prometheus/consoles'
+          - '--storage.tsdb.retention.time=200h'
+          - '--web.enable-lifecycle'
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+        - name: prometheus-storage
+          mountPath: /prometheus
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: prometheus-config
+        configMap:
+          name: ml-metrics-config
+      - name: prometheus-storage
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: metrify
+  labels:
+    app: prometheus
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: web
+  selector:
+    app: prometheus
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: metrify
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+          name: grafana
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "admin123"
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-piechart-panel"
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: grafana-dashboards
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: grafana-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: grafana-storage
+        emptyDir: {}
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
+      - name: grafana-datasources
+        configMap:
+          name: grafana-datasources
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: metrify
+  labels:
+    app: grafana
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: grafana
+  selector:
+    app: grafana
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: metrify
+data:
+  prometheus.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: metrify
+data:
+  ml-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "ML Model Performance Dashboard",
+        "tags": ["ml", "models", "performance"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Model Accuracy",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "ml_model_accuracy",
+                "legendFormat": "{{model_name}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "min": 0,
+                "max": 1
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "Model Latency",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "ml_model_latency_seconds",
+                "legendFormat": "{{model_name}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Latency (seconds)",
+                "min": 0
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(ml_model_requests_total[5m])",
+                "legendFormat": "{{model_name}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Requests per second"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Error Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(ml_model_errors_total[5m])",
+                "legendFormat": "{{model_name}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Errors per second"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "title": "Data Drift Score",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "ml_data_drift_score",
+                "legendFormat": "{{feature_name}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Drift Score",
+                "min": 0,
+                "max": 1
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "title": "Model Drift Score",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "ml_model_drift_score",
+                "legendFormat": "{{model_name}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Drift Score",
+                "min": 0,
+                "max": 1
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "10s"
+      }
+    }

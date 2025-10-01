@@ -1,5 +1,6 @@
-# Metrify Smart Metering Data Pipeline v2 - Complete Dependencies
+# Metrify Smart Metering Data Pipeline v3 - Complete Dependencies
 # =================================================================
+# Updated for Phase 1, 2, and 3 implementations
 
 # Core Web Framework & API
 fastapi==0.104.1
@@ -13,6 +14,7 @@ sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
 alembic==1.13.1
 pymongo==4.5.0
+redis==5.0.1
 
 # Data Processing & Analytics
 pandas==2.1.4
@@ -21,21 +23,49 @@ polars==0.20.2
 pyspark==3.4.1
 pyspark-streaming==3.4.1
 
+# Machine Learning & AI
+mlflow==2.8.1                   # Model lifecycle management
+tensorflow==2.15.0              # Primary ML framework
+tensorflow-serving==2.15.0      # Model serving
+tensorflow-probability==0.23.0  # Probabilistic modeling
+tensorflow-io==0.34.0           # I/O operations
+optuna==3.4.0                   # Hyperparameter optimization
+feast==0.34.0                   # Feature store
+evidently==0.4.0                # Data drift detection
+shap==0.42.1                    # Model explainability
+xgboost==2.0.2                  # Gradient boosting
+lightgbm==4.1.0                 # Gradient boosting
+catboost==1.2.2                 # Gradient boosting
+tensorflow-hub==0.15.0          # Pre-trained models
+tensorflow-transform==1.15.0    # Data preprocessing
+
 # Message Queue & Streaming
 kafka-python==2.0.2
 aiokafka==0.10.0
 confluent-kafka==2.3.0
+# Apache Flink Integration (Phase 3)
+pyflink==1.18.0
 
 # Cloud Services & Storage
 boto3==1.34.0
 s3fs==2023.6.0
 snowflake-connector-python==3.6.0
 snowflake-sqlalchemy==1.5.0
+# Azure (Phase 3)
+azure-storage-blob==12.19.0
+azure-identity==1.15.0
+azure-keyvault-secrets==4.7.0
+# GCP (Phase 3)
+google-cloud-storage==2.10.0
+google-cloud-bigquery==3.13.0
+google-cloud-pubsub==2.18.4
 
 # Workflow Orchestration
 apache-airflow==2.7.3
 apache-airflow-providers-postgres==5.6.0
 apache-airflow-providers-amazon==8.12.0
+apache-airflow-providers-azure==8.12.0
+apache-airflow-providers-google==10.10.0
 
 # dbt Data Transformation
 dbt-core==1.7.0
@@ -52,6 +82,8 @@ dbt-docs==1.7.0
 # Data Quality & Validation
 great-expectations==0.18.8
 pandera==0.17.2
+# Advanced Analytics Quality (Phase 2)
+pydantic-extra-types==2.1.0
 
 # Machine Learning
 scikit-learn==1.3.2
@@ -62,6 +94,9 @@ prometheus-client==0.19.0
 grafana-api==1.0.3
 datadog==0.48.0
 sentry-sdk==1.38.0
+# Advanced Monitoring (Phase 3)
+jaeger-client==4.8.0
+opencensus-ext-jaeger==1.1.0
 
 # OpenTelemetry & Tracing
 opentelemetry-api==1.21.0
@@ -125,9 +160,46 @@ pytz==2023.3
 tenacity==8.2.3
 structlog==23.2.0
 schedule==1.2.0
+# Performance Optimization (Phase 3)
+cachetools==5.3.2
+memory-profiler==0.61.0
+# Event-Driven Architecture (Phase 3)
+celery==5.3.4
+redis==5.0.1
 
 # Template Engine
 jinja2==3.1.2
+
+# Phase 3: Advanced Architecture & Scalability Dependencies
+# =========================================================
+# Event-Driven Architecture
+eventstore==0.2.0
+# Multi-Cloud Infrastructure
+terraform-compliance==1.3.0
+# Advanced Performance Optimization
+numba==0.58.1
+cython==3.0.6
+# Stream Processing Enhancement
+apache-beam==2.50.0
+# Advanced Analytics
+plotly==5.17.0
+dash==2.14.2
+# Time Series Analysis
+statsmodels==0.14.0
+prophet==1.1.4
+# Database Optimization
+sqlparse==0.4.4
+# Caching & Performance
+diskcache==5.6.3
+# Configuration Management
+dynaconf==3.2.4
+# Advanced Monitoring
+newrelic==9.2.0
+# Data Governance
+apache-atlas==2.3.0
+# Security & Compliance
+cryptography==41.0.8
+keyring==24.3.0
 
 # Additional Utilities
 # (click already listed above in CLI section)

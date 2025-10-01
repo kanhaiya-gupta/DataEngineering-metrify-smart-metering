@@ -17,6 +17,9 @@ from .v1.smart_meter_endpoints import router as smart_meter_router
 from .v1.grid_operator_endpoints import router as grid_operator_router
 from .v1.weather_endpoints import router as weather_router
 from .v1.analytics_endpoints import router as analytics_router
+from .v1.advanced_analytics_endpoints import router as advanced_analytics_router
+from .v1.governance_endpoints import router as governance_router
+from .v1.ml_endpoints import router as ml_router
 from .middleware.auth_middleware import AuthMiddleware
 from .middleware.logging_middleware import LoggingMiddleware
 from .middleware.monitoring_middleware import MonitoringMiddleware
@@ -151,6 +154,23 @@ app.include_router(
     analytics_router,
     prefix="/api/v1/analytics",
     tags=["Analytics"]
+)
+
+app.include_router(
+    advanced_analytics_router,
+    prefix="/api/v1",
+    tags=["Advanced Analytics"]
+)
+app.include_router(
+    governance_router,
+    prefix="/api/v1",
+    tags=["Data Governance"]
+)
+
+app.include_router(
+    ml_router,
+    prefix="/api/v1",
+    tags=["Machine Learning"]
 )
 
 

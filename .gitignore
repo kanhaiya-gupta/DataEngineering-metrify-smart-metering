@@ -1,0 +1,423 @@
+# Metrify Smart Metering Data Pipeline v2 - .gitignore
+# =====================================================
+
+# Python
+# ------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+*.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+env.example
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Data Engineering Specific
+# =========================
+
+# Data files
+*.csv
+*.json
+*.parquet
+*.avro
+*.orc
+*.feather
+*.pickle
+*.pkl
+*.h5
+*.hdf5
+*.xlsx
+*.xls
+*.tsv
+*.txt
+!requirements.txt
+!requirements-test.txt
+!README.txt
+!CHANGELOG.txt
+!LICENSE.txt
+
+# Large data directories
+data/
+datasets/
+raw_data/
+processed_data/
+staging_data/
+archive/
+backups/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.mdb
+*.accdb
+
+# Log files
+logs/
+*.log
+*.out
+*.err
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Airflow
+# -------
+airflow.cfg
+airflow.db
+airflow-webserver.pid
+logs/
+dags/__pycache__/
+dags/*.pyc
+unittests.cfg
+webserver_config.py
+
+# dbt
+# ----
+dbt_packages/
+target/
+logs/
+profiles.yml
+dbt_project.yml.bak
+
+# Docker
+# ------
+.dockerignore
+docker-compose.override.yml
+.docker/
+
+# Kubernetes
+# ----------
+*.kubeconfig
+kubeconfig
+.kube/
+
+# Terraform
+# ---------
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+terraform.tfvars.json
+
+# AWS
+# ---
+.aws/
+aws-exports.js
+amplify/
+
+# Google Cloud
+# ------------
+.gcloud/
+service-account-key.json
+gcloud-service-key.json
+
+# Azure
+# -----
+.azure/
+
+# Snowflake
+# ---------
+snowflake_connector_python/
+snowflake-connector-python/
+
+# Kafka
+# -----
+kafka-logs/
+zookeeper/
+
+# Spark
+# -----
+spark-warehouse/
+metastore_db/
+derby.log
+
+# Jupyter
+# -------
+.ipynb_checkpoints/
+*.ipynb
+
+# MLflow
+# ------
+mlruns/
+mlartifacts/
+
+# Weights & Biases
+# ----------------
+wandb/
+
+# TensorBoard
+# -----------
+tensorboard/
+
+# Configuration files with secrets
+# ================================
+config/secrets/
+config/*.env
+config/*.key
+config/*.pem
+config/*.p12
+config/*.pfx
+config/credentials/
+config/private/
+
+# Environment files
+# =================
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+.env.*.local
+
+# IDE and Editor files
+# ====================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# OS generated files
+# ==================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Backup files
+# ============
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.swp
+*.tmp
+
+# Archive files
+# =============
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Security and Keys
+# =================
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+*.truststore
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+known_hosts
+
+# Monitoring and Observability
+# =============================
+prometheus_data/
+grafana_data/
+jaeger_data/
+elasticsearch_data/
+
+# Test artifacts
+# ==============
+test-results/
+test-reports/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Performance testing
+# ===================
+locust_results/
+performance_reports/
+
+# Documentation builds
+# ===================
+docs/_build/
+docs/build/
+site/
+
+# Node.js (if any frontend components)
+# ====================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Local development
+# =================
+.local/
+local/
+scratch/
+playground/
+sandbox/
+
+# Metrify specific
+# ================
+metrify_logs/
+metrify_data/
+metrify_cache/
+.metrify/

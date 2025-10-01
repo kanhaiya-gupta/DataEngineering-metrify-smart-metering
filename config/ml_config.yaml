@@ -1,0 +1,233 @@
+# ML Configuration for Metrify Smart Metering Data Pipeline
+# =========================================================
+
+# Model Training Configuration
+training:
+  # General settings
+  test_size: 0.2
+  validation_size: 0.2
+  random_state: 42
+  batch_size: 32
+  epochs: 100
+  early_stopping_patience: 10
+  learning_rate: 0.001
+  
+  # Model types
+  consumption_forecasting:
+    model_type: "lstm"
+    sequence_length: 24
+    forecast_horizon: 1
+    lstm_units: [64, 32]
+    dropout_rate: 0.2
+    use_attention: true
+    use_residual_connections: true
+  
+  anomaly_detection:
+    model_type: "autoencoder"
+    sequence_length: 24
+    encoding_dim: 8
+    hidden_layers: [64, 32, 16]
+    dropout_rate: 0.2
+    threshold_method: "percentile"
+    threshold_value: 95.0
+  
+  grid_optimization:
+    model_type: "multi_output"
+    sequence_length: 24
+    forecast_horizon: 24
+    optimization_targets: ["load_balancing_score", "efficiency_score", "stability_score", "cost_optimization_score"]
+    load_balancing_weight: 0.4
+    efficiency_weight: 0.3
+    stability_weight: 0.3
+    use_attention: true
+
+# Feature Engineering Configuration
+feature_engineering:
+  lookback_window: 24
+  forecast_horizon: 1
+  include_weather: true
+  include_grid_status: true
+  include_time_features: true
+  include_lag_features: true
+  include_rolling_features: true
+
+# Data Preprocessing Configuration
+preprocessing:
+  handle_missing: "interpolate"  # interpolate, drop, impute
+  imputation_method: "knn"  # simple, knn
+  scaling_method: "standard"  # standard, minmax, robust
+  outlier_method: "iqr"  # iqr, zscore, isolation_forest
+  outlier_threshold: 3.0
+  feature_selection: true
+  n_features: 50
+  pca_components: null
+  remove_duplicates: true
+  time_series_resample: true
+  resample_freq: "1H"
+
+# Model Serving Configuration
+serving:
+  host: "0.0.0.0"
+  port: 8000
+  max_batch_size: 32
+  timeout: 30
+  health_check_interval: 60
+  enable_metrics: true
+  enable_logging: true
+
+# MLflow Configuration
+mlflow:
+  tracking_uri: "sqlite:///mlflow.db"
+  experiment_name: "smart_meter_ml"
+  artifact_location: "mlruns"
+  registry_uri: "sqlite:///mlflow_registry.db"
+
+# Monitoring Configuration
+monitoring:
+  drift_threshold: 0.1
+  performance_threshold: 0.8
+  check_interval: 3600  # seconds
+  enable_mlflow_logging: true
+  enable_evidently_reports: true
+  alert_emails: []
+  
+  # Data drift detection
+  data_drift:
+    reference_data_path: "data/reference_data.csv"
+    current_data_path: "data/current_data.csv"
+    drift_detection_method: "evidently"
+  
+  # Model performance monitoring
+  performance_monitoring:
+    metrics: ["accuracy", "precision", "recall", "f1_score", "rmse", "mae"]
+    threshold_metrics: ["f1_score"]
+    alert_thresholds:
+      f1_score: 0.8
+      accuracy: 0.85
+
+# Hyperparameter Optimization
+hyperparameter_optimization:
+  enabled: true
+  n_trials: 50
+  optimization_metric: "val_rmse"
+  direction: "minimize"
+  
+  # Search spaces
+  search_spaces:
+    model_type: ["lstm", "gru", "cnn_lstm", "transformer"]
+    sequence_length: [12, 24, 48]
+    batch_size: [16, 32, 64]
+    learning_rate: [0.0001, 0.001, 0.01]
+    lstm_units: [[32, 16], [64, 32], [128, 64]]
+    dropout_rate: [0.1, 0.2, 0.3]
+
+# Model Deployment Configuration
+deployment:
+  # Kubernetes deployment
+  kubernetes:
+    namespace: "ml-models"
+    replicas: 3
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+    
+    # Auto-scaling
+    autoscaling:
+      enabled: true
+      min_replicas: 1
+      max_replicas: 10
+      target_cpu_utilization: 70
+      target_memory_utilization: 80
+  
+  # Model versioning
+  versioning:
+    strategy: "semantic"  # semantic, timestamp, git_hash
+    auto_increment: true
+    keep_versions: 10
+  
+  # A/B Testing
+  ab_testing:
+    enabled: true
+    traffic_split: 0.1  # 10% traffic to new model
+    success_metric: "f1_score"
+    success_threshold: 0.05  # 5% improvement required
+    test_duration: 604800  # 7 days in seconds
+
+# Data Sources Configuration
+data_sources:
+  # Smart meter data
+  smart_meters:
+    kafka_topic: "smart_meter_readings"
+    batch_size: 1000
+    processing_interval: 60  # seconds
+  
+  # Weather data
+  weather:
+    kafka_topic: "weather_observations"
+    batch_size: 100
+    processing_interval: 300  # 5 minutes
+  
+  # Grid operator data
+  grid_operators:
+    kafka_topic: "grid_status_updates"
+    batch_size: 100
+    processing_interval: 60  # 1 minute
+
+# Model Storage Configuration
+model_storage:
+  # Local storage
+  local:
+    base_path: "models"
+    format: "h5"  # h5, saved_model, onnx
+  
+  # MLflow storage
+  mlflow:
+    artifact_location: "mlruns"
+    model_registry: true
+  
+  # Cloud storage (AWS S3)
+  s3:
+    enabled: false
+    bucket: "metrify-ml-models"
+    region: "us-west-2"
+    prefix: "models/"
+
+# Security Configuration
+security:
+  # API authentication
+  api_auth:
+    enabled: true
+    method: "jwt"  # jwt, api_key, oauth
+    secret_key: "your-secret-key"
+    token_expiry: 3600  # seconds
+  
+  # Model encryption
+  model_encryption:
+    enabled: false
+    algorithm: "AES-256"
+    key_rotation_days: 90
+  
+  # Data privacy
+  data_privacy:
+    anonymize_features: true
+    remove_pii: true
+    gdpr_compliance: true
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/ml_pipeline.log"
+  max_file_size: "10MB"
+  backup_count: 5
+  
+  # MLflow logging
+  mlflow_logging:
+    enabled: true
+    log_artifacts: true
+    log_metrics: true
+    log_params: true

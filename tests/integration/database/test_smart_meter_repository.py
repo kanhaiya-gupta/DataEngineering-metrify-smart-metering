@@ -20,7 +20,7 @@ from src.core.domain.enums.quality_tier import QualityTier
 @pytest.fixture
 def test_database_url():
     """Test database URL"""
-    return "sqlite:///./test_metrify.db"
+    return "postgresql://postgres:postgres@localhost:5432/metrify_test"
 
 
 @pytest.fixture

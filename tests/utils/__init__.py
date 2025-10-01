@@ -1,4 +1,5 @@
 """
 Test Utilities
-Helper functions, fixtures, and utilities for testing
+
+Common test helpers, assertions, data generators, and performance testing utilities.
 """
