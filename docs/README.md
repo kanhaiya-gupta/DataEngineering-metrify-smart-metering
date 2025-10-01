@@ -38,22 +38,24 @@ graph TB
         CACHE[(Redis Cache<br/>⚡ Multi-level Caching)]
     end
 
+    %% Monitoring & Observability
+    subgraph "📈 Monitoring & Observability"
+        PROMETHEUS[Prometheus<br/>📈 Metrics Collection]
+        GRAFANA[Grafana<br/>📊 Dashboards]
+        JAEGER[Jaeger<br/>🔍 Distributed Tracing]
+        QUALITY[Data Quality<br/>✅ Great Expectations]
+        GOVERNANCE[Data Governance<br/>🏛️ Apache Atlas]
+    end
+
+    %% DataDog - Separate on the right
+    DATADOG[DataDog<br/>📊 Metrics & Logs]
+
     %% Infrastructure
     subgraph "🏗️ Infrastructure"
         DOCKER[Docker<br/>🐳 Containerization]
         K8S[Kubernetes<br/>☸️ Orchestration]
         TERRAFORM[Multi-Cloud Terraform<br/>🏗️ AWS/Azure/GCP]
         PERFORMANCE[Performance<br/>⚡ Optimization]
-    end
-
-    %% Monitoring & Observability
-    subgraph "📈 Monitoring & Observability"
-        DATADOG[DataDog<br/>📊 Metrics & Logs]
-        PROMETHEUS[Prometheus<br/>📈 Metrics Collection]
-        GRAFANA[Grafana<br/>📊 Dashboards]
-        JAEGER[Jaeger<br/>🔍 Distributed Tracing]
-        QUALITY[Data Quality<br/>✅ Great Expectations]
-        GOVERNANCE[Data Governance<br/>🏛️ Apache Atlas]
     end
 
     %% Data Flow

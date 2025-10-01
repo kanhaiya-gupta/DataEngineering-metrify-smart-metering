@@ -50,13 +50,15 @@ graph TB
 
     %% Monitoring & Observability
     subgraph "📈 Monitoring & Observability"
-        DATADOG[DataDog<br/>📊 Metrics & Logs]
         PROMETHEUS[Prometheus<br/>📈 Metrics Collection]
         GRAFANA[Grafana<br/>📊 Dashboards]
         JAEGER[Jaeger<br/>🔍 Distributed Tracing]
         QUALITY[Data Quality<br/>✅ Great Expectations]
         GOVERNANCE[Data Governance<br/>🏛️ Apache Atlas]
     end
+
+    %% DataDog - Separate on the right
+    DATADOG[DataDog<br/>📊 Metrics & Logs]
 
     %% Data Flow
     SM --> KAFKA
