@@ -1,0 +1,172 @@
+# Kafka Configuration
+# Settings for Apache Kafka integration
+
+# Topic Configuration
+topics:
+  # Smart Meter Data Topics
+  smart_meter_data:
+    name: "smart-meter-data"
+    partitions: 12
+    replication_factor: 3
+    retention_hours: 168  # 7 days
+    compression_type: "snappy"
+    cleanup_policy: "delete"
+  
+  smart_meter_events:
+    name: "smart-meter-events"
+    partitions: 6
+    replication_factor: 3
+    retention_hours: 720  # 30 days
+    compression_type: "snappy"
+    cleanup_policy: "delete"
+  
+  # Grid Operator Data Topics
+  grid_operator_data:
+    name: "grid-operator-data"
+    partitions: 8
+    replication_factor: 3
+    retention_hours: 168  # 7 days
+    compression_type: "snappy"
+    cleanup_policy: "delete"
+  
+  grid_status_events:
+    name: "grid-status-events"
+    partitions: 4
+    replication_factor: 3
+    retention_hours: 720  # 30 days
+    compression_type: "snappy"
+    cleanup_policy: "delete"
+  
+  # Weather Data Topics
+  weather_data:
+    name: "weather-data"
+    partitions: 6
+    replication_factor: 3
+    retention_hours: 168  # 7 days
+    compression_type: "snappy"
+    cleanup_policy: "delete"
+  
+  weather_events:
+    name: "weather-events"
+    partitions: 4
+    replication_factor: 3
+    retention_hours: 720  # 30 days
+    compression_type: "snappy"
+    cleanup_policy: "delete"
+  
+  # Analytics Topics
+  analytics_events:
+    name: "analytics-events"
+    partitions: 8
+    replication_factor: 3
+    retention_hours: 2160  # 90 days
+    compression_type: "snappy"
+    cleanup_policy: "delete"
+  
+  # Monitoring Topics
+  monitoring_events:
+    name: "monitoring-events"
+    partitions: 4
+    replication_factor: 3
+    retention_hours: 2160  # 90 days
+    compression_type: "snappy"
+    cleanup_policy: "delete"
+  
+  # Alert Topics
+  alert_events:
+    name: "alert-events"
+    partitions: 4
+    replication_factor: 3
+    retention_hours: 2160  # 90 days
+    compression_type: "snappy"
+    cleanup_policy: "delete"
+
+# Producer Configuration
+producer:
+  # Basic settings
+  bootstrap_servers: ["kafka-1:9092", "kafka-2:9092", "kafka-3:9092"]
+  client_id: "metrify-producer"
+  
+  # Reliability settings
+  acks: "all"  # Wait for all replicas to acknowledge
+  retries: 10
+  retry_backoff_ms: 100
+  request_timeout_ms: 30000
+  delivery_timeout_ms: 120000
+  
+  # Performance settings
+  batch_size: 16384
+  linger_ms: 10
+  buffer_memory: 33554432
+  compression_type: "snappy"
+  max_in_flight_requests_per_connection: 5
+  
+  # Serialization
+  key_serializer: "org.apache.kafka.common.serialization.StringSerializer"
+  value_serializer: "org.apache.kafka.common.serialization.ByteArraySerializer"
+
+# Consumer Configuration
+consumer:
+  # Basic settings
+  bootstrap_servers: ["kafka-1:9092", "kafka-2:9092", "kafka-3:9092"]
+  group_id: "metrify-consumer"
+  client_id: "metrify-consumer"
+  
+  # Offset management
+  auto_offset_reset: "latest"
+  enable_auto_commit: true
+  auto_commit_interval_ms: 5000
+  
+  # Performance settings
+  fetch_min_bytes: 1
+  fetch_max_wait_ms: 500
+  max_poll_records: 500
+  max_poll_interval_ms: 300000
+  session_timeout_ms: 30000
+  heartbeat_interval_ms: 10000
+  
+  # Deserialization
+  key_deserializer: "org.apache.kafka.common.serialization.StringDeserializer"
+  value_deserializer: "org.apache.kafka.common.serialization.ByteArrayDeserializer"
+
+# Security Configuration
+security:
+  # SASL/SSL settings
+  security_protocol: "SASL_SSL"
+  sasl_mechanism: "PLAIN"
+  sasl_username: "${KAFKA_USERNAME}"
+  sasl_password: "${KAFKA_PASSWORD}"
+  
+  # SSL settings
+  ssl_ca_location: "/etc/ssl/certs/kafka-ca.crt"
+  ssl_certificate_location: "/etc/ssl/certs/kafka-client.crt"
+  ssl_key_location: "/etc/ssl/private/kafka-client.key"
+  ssl_key_password: "${KAFKA_SSL_KEY_PASSWORD}"
+
+# Monitoring Configuration
+monitoring:
+  # Metrics collection
+  metrics_enabled: true
+  metrics_sample_window_ms: 30000
+  metrics_num_samples: 2
+  metrics_recording_level: "INFO"
+  
+  # JMX settings
+  jmx_enabled: true
+  jmx_port: 9999
+  
+  # Logging
+  log_level: "INFO"
+  log_retention_hours: 168
+
+# Schema Registry Configuration
+schema_registry:
+  enabled: true
+  url: "http://schema-registry:8081"
+  username: "${SCHEMA_REGISTRY_USERNAME}"
+  password: "${SCHEMA_REGISTRY_PASSWORD}"
+  
+  # Schema settings
+  auto_register_schemas: true
+  use_latest_version: true
+  subject_name_strategy: "TopicNameStrategy"

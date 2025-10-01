@@ -1,0 +1,209 @@
+# Development Environment Configuration
+# Metrify Smart Metering Data Pipeline
+
+environment: development
+debug: true
+log_level: DEBUG
+
+# Application Settings
+app:
+  name: "Metrify Smart Metering API"
+  version: "1.0.0"
+  description: "Development environment for smart metering data pipeline"
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1
+  reload: true
+
+# Database Configuration
+database:
+  host: "localhost"
+  port: 5432
+  name: "metrify_dev"
+  username: "metrify_dev"
+  password: "dev_password"
+  pool_size: 5
+  max_overflow: 10
+  pool_timeout: 30
+  pool_recycle: 3600
+  echo: true  # Log SQL queries in development
+
+# Kafka Configuration
+kafka:
+  bootstrap_servers: ["localhost:9092"]
+  security_protocol: "PLAINTEXT"
+  sasl_mechanism: null
+  sasl_username: null
+  sasl_password: null
+  consumer_group: "metrify-dev"
+  auto_offset_reset: "latest"
+  enable_auto_commit: true
+  session_timeout_ms: 30000
+  heartbeat_interval_ms: 10000
+
+# S3 Configuration
+s3:
+  region: "eu-central-1"
+  bucket_name: "metrify-dev-data"
+  access_key_id: "dev_access_key"
+  secret_access_key: "dev_secret_key"
+  endpoint_url: null  # Use AWS S3 by default
+  use_ssl: true
+
+# Snowflake Configuration
+snowflake:
+  account: "metrify-dev"
+  warehouse: "DEV_WH"
+  database: "METRIFY_DEV"
+  schema: "PUBLIC"
+  username: "dev_user"
+  password: "dev_password"
+  role: "DEV_ROLE"
+  region: "eu-central-1"
+
+# Airflow Configuration
+airflow:
+  webserver_url: "http://localhost:8080"
+  username: "admin"
+  password: "admin"
+  api_url: "http://localhost:8080/api/v1"
+  dag_folder: "/opt/airflow/dags"
+
+# Monitoring Configuration
+monitoring:
+  # Prometheus
+  prometheus:
+    enabled: true
+    port: 9090
+    namespace: "metrify_dev"
+    subsystem: "smart_metering"
+  
+  # Grafana
+  grafana:
+    enabled: true
+    url: "http://localhost:3000"
+    username: "admin"
+    password: "admin"
+    api_key: "dev_api_key"
+  
+  # Jaeger
+  jaeger:
+    enabled: true
+    agent_host: "localhost"
+    agent_port: 6831
+    collector_endpoint: "http://localhost:14268/api/traces"
+  
+  # DataDog
+  datadog:
+    enabled: false  # Disabled in development
+    api_key: "dev_api_key"
+    app_key: "dev_app_key"
+    site: "datadoghq.com"
+
+# Security Configuration
+security:
+  jwt_secret_key: "dev_secret_key_change_in_production"
+  jwt_algorithm: "HS256"
+  jwt_expire_minutes: 60
+  refresh_token_expire_days: 7
+  password_min_length: 8
+  max_login_attempts: 5
+  lockout_duration_minutes: 15
+
+# Data Processing Configuration
+data_processing:
+  batch_size: 1000
+  max_retries: 3
+  retry_delay_seconds: 5
+  quality_threshold: 0.8
+  anomaly_detection_sensitivity: 0.5
+  
+  # Smart Meter Processing
+  smart_meter:
+    processing_interval_seconds: 60
+    batch_timeout_seconds: 300
+    max_batch_size: 10000
+  
+  # Grid Operator Processing
+  grid_operator:
+    processing_interval_seconds: 300  # 5 minutes
+    batch_timeout_seconds: 600
+    max_batch_size: 5000
+  
+  # Weather Processing
+  weather:
+    processing_interval_seconds: 900  # 15 minutes
+    batch_timeout_seconds: 1800
+    max_batch_size: 2000
+
+# External API Configuration
+external_apis:
+  # Data Quality Service
+  data_quality:
+    base_url: "http://localhost:8001"
+    timeout_seconds: 30
+    retry_attempts: 3
+  
+  # Anomaly Detection Service
+  anomaly_detection:
+    base_url: "http://localhost:8002"
+    timeout_seconds: 30
+    retry_attempts: 3
+  
+  # Grid Data Service
+  grid_data:
+    base_url: "http://localhost:8003"
+    timeout_seconds: 30
+    retry_attempts: 3
+  
+  # Weather Data Service
+  weather_data:
+    base_url: "http://localhost:8004"
+    timeout_seconds: 30
+    retry_attempts: 3
+  
+  # Alerting Service
+  alerting:
+    base_url: "http://localhost:8005"
+    timeout_seconds: 30
+    retry_attempts: 3
+
+# Logging Configuration
+logging:
+  level: "DEBUG"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "logs/metrify-dev.log"
+  max_file_size_mb: 100
+  backup_count: 5
+  console_output: true
+
+# Performance Configuration
+performance:
+  # API Performance
+  api:
+    max_request_size_mb: 10
+    request_timeout_seconds: 30
+    rate_limit_per_minute: 1000
+  
+  # Database Performance
+  database:
+    query_timeout_seconds: 30
+    connection_pool_size: 10
+    max_overflow: 20
+  
+  # Kafka Performance
+  kafka:
+    max_poll_records: 500
+    fetch_max_wait_ms: 500
+    fetch_min_bytes: 1
+
+# Feature Flags
+features:
+  enable_anomaly_detection: true
+  enable_weather_correlation: true
+  enable_real_time_processing: true
+  enable_batch_processing: true
+  enable_data_quality_checks: true
+  enable_alerting: true
+  enable_analytics: true
+  enable_forecasting: false  # Disabled in development

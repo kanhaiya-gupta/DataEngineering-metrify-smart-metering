@@ -1,0 +1,244 @@
+# Production Environment Configuration
+# Metrify Smart Metering Data Pipeline
+
+environment: production
+debug: false
+log_level: WARNING
+
+# Application Settings
+app:
+  name: "Metrify Smart Metering API"
+  version: "1.0.0"
+  description: "Production environment for smart metering data pipeline"
+  host: "0.0.0.0"
+  port: 8000
+  workers: 8
+  reload: false
+
+# Database Configuration
+database:
+  host: "${DB_HOST}"
+  port: 5432
+  name: "metrify_prod"
+  username: "${DB_USERNAME}"
+  password: "${DB_PASSWORD}"
+  pool_size: 50
+  max_overflow: 100
+  pool_timeout: 30
+  pool_recycle: 3600
+  echo: false
+  ssl_mode: "require"
+
+# Kafka Configuration
+kafka:
+  bootstrap_servers: ["${KAFKA_BROKER_1}", "${KAFKA_BROKER_2}", "${KAFKA_BROKER_3}"]
+  security_protocol: "SASL_SSL"
+  sasl_mechanism: "PLAIN"
+  sasl_username: "${KAFKA_USERNAME}"
+  sasl_password: "${KAFKA_PASSWORD}"
+  consumer_group: "metrify-prod"
+  auto_offset_reset: "latest"
+  enable_auto_commit: true
+  session_timeout_ms: 30000
+  heartbeat_interval_ms: 10000
+  security_protocol: "SASL_SSL"
+  ssl_cafile: "/etc/ssl/certs/kafka-ca.crt"
+
+# S3 Configuration
+s3:
+  region: "eu-central-1"
+  bucket_name: "metrify-prod-data"
+  access_key_id: "${AWS_ACCESS_KEY_ID}"
+  secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+  endpoint_url: null
+  use_ssl: true
+
+# Snowflake Configuration
+snowflake:
+  account: "${SNOWFLAKE_ACCOUNT}"
+  warehouse: "PROD_WH"
+  database: "METRIFY_PROD"
+  schema: "PUBLIC"
+  username: "${SNOWFLAKE_USERNAME}"
+  password: "${SNOWFLAKE_PASSWORD}"
+  role: "PROD_ROLE"
+  region: "eu-central-1"
+
+# Airflow Configuration
+airflow:
+  webserver_url: "https://airflow.metrify.com"
+  username: "${AIRFLOW_USERNAME}"
+  password: "${AIRFLOW_PASSWORD}"
+  api_url: "https://airflow.metrify.com/api/v1"
+  dag_folder: "/opt/airflow/dags"
+
+# Monitoring Configuration
+monitoring:
+  # Prometheus
+  prometheus:
+    enabled: true
+    port: 9090
+    namespace: "metrify_prod"
+    subsystem: "smart_metering"
+  
+  # Grafana
+  grafana:
+    enabled: true
+    url: "https://grafana.metrify.com"
+    username: "${GRAFANA_USERNAME}"
+    password: "${GRAFANA_PASSWORD}"
+    api_key: "${GRAFANA_API_KEY}"
+  
+  # Jaeger
+  jaeger:
+    enabled: true
+    agent_host: "jaeger-agent.metrify.com"
+    agent_port: 6831
+    collector_endpoint: "https://jaeger-collector.metrify.com:14268/api/traces"
+  
+  # DataDog
+  datadog:
+    enabled: true
+    api_key: "${DATADOG_API_KEY}"
+    app_key: "${DATADOG_APP_KEY}"
+    site: "datadoghq.eu"
+
+# Security Configuration
+security:
+  jwt_secret_key: "${JWT_SECRET_KEY}"
+  jwt_algorithm: "HS256"
+  jwt_expire_minutes: 15
+  refresh_token_expire_days: 1
+  password_min_length: 16
+  max_login_attempts: 3
+  lockout_duration_minutes: 60
+  require_2fa: true
+  session_timeout_minutes: 30
+
+# Data Processing Configuration
+data_processing:
+  batch_size: 10000
+  max_retries: 10
+  retry_delay_seconds: 30
+  quality_threshold: 0.9
+  anomaly_detection_sensitivity: 0.2
+  
+  # Smart Meter Processing
+  smart_meter:
+    processing_interval_seconds: 10
+    batch_timeout_seconds: 60
+    max_batch_size: 100000
+  
+  # Grid Operator Processing
+  grid_operator:
+    processing_interval_seconds: 30
+    batch_timeout_seconds: 120
+    max_batch_size: 50000
+  
+  # Weather Processing
+  weather:
+    processing_interval_seconds: 60
+    batch_timeout_seconds: 300
+    max_batch_size: 20000
+
+# External API Configuration
+external_apis:
+  # Data Quality Service
+  data_quality:
+    base_url: "https://data-quality.metrify.com"
+    timeout_seconds: 120
+    retry_attempts: 10
+  
+  # Anomaly Detection Service
+  anomaly_detection:
+    base_url: "https://anomaly-detection.metrify.com"
+    timeout_seconds: 120
+    retry_attempts: 10
+  
+  # Grid Data Service
+  grid_data:
+    base_url: "https://grid-data.metrify.com"
+    timeout_seconds: 120
+    retry_attempts: 10
+  
+  # Weather Data Service
+  weather_data:
+    base_url: "https://weather-data.metrify.com"
+    timeout_seconds: 120
+    retry_attempts: 10
+  
+  # Alerting Service
+  alerting:
+    base_url: "https://alerting.metrify.com"
+    timeout_seconds: 120
+    retry_attempts: 10
+
+# Logging Configuration
+logging:
+  level: "WARNING"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "/var/log/metrify/production.log"
+  max_file_size_mb: 1000
+  backup_count: 20
+  console_output: false
+  syslog_enabled: true
+  syslog_address: "udp://logs.metrify.com:514"
+
+# Performance Configuration
+performance:
+  # API Performance
+  api:
+    max_request_size_mb: 100
+    request_timeout_seconds: 120
+    rate_limit_per_minute: 10000
+  
+  # Database Performance
+  database:
+    query_timeout_seconds: 120
+    connection_pool_size: 100
+    max_overflow: 200
+  
+  # Kafka Performance
+  kafka:
+    max_poll_records: 2000
+    fetch_max_wait_ms: 2000
+    fetch_min_bytes: 2048
+
+# Feature Flags
+features:
+  enable_anomaly_detection: true
+  enable_weather_correlation: true
+  enable_real_time_processing: true
+  enable_batch_processing: true
+  enable_data_quality_checks: true
+  enable_alerting: true
+  enable_analytics: true
+  enable_forecasting: true
+  enable_ml_models: true
+  enable_auto_scaling: true
+
+# High Availability Configuration
+high_availability:
+  enabled: true
+  replica_count: 3
+  health_check_interval: 30
+  failover_timeout: 60
+  load_balancer: "nginx"
+  
+# Disaster Recovery Configuration
+disaster_recovery:
+  enabled: true
+  backup_interval_hours: 6
+  retention_days: 30
+  cross_region_replication: true
+  rto_minutes: 60  # Recovery Time Objective
+  rpo_minutes: 15  # Recovery Point Objective
+
+# Compliance Configuration
+compliance:
+  gdpr_enabled: true
+  data_retention_days: 2555  # 7 years
+  audit_logging: true
+  encryption_at_rest: true
+  encryption_in_transit: true
+  pii_masking: true

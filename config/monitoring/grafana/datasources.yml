@@ -1,0 +1,50 @@
+# Grafana Data Sources Configuration
+apiVersion: 1
+
+datasources:
+  # Prometheus Data Source
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 5s
+
+  # InfluxDB Data Source (if needed)
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    database: metrify
+    user: grafana
+    secureJsonData:
+      password: grafana_password
+    jsonData:
+      httpMode: POST
+      timeInterval: 5s
+
+  # PostgreSQL Data Source (for direct queries)
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: metrify
+    user: grafana
+    secureJsonData:
+      password: grafana_password
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 0
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+
+  # Jaeger Data Source
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: true

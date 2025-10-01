@@ -1,0 +1,268 @@
+# Snowflake Configuration
+# Settings for Snowflake data warehouse integration
+
+# Connection Configuration
+connection:
+  account: "${SNOWFLAKE_ACCOUNT}"
+  region: "eu-central-1"
+  warehouse: "${SNOWFLAKE_WAREHOUSE}"
+  database: "${SNOWFLAKE_DATABASE}"
+  schema: "PUBLIC"
+  username: "${SNOWFLAKE_USERNAME}"
+  password: "${SNOWFLAKE_PASSWORD}"
+  role: "${SNOWFLAKE_ROLE}"
+  
+  # Connection settings
+  timeout: 60
+  retry_count: 3
+  retry_delay: 1
+  
+  # SSL settings
+  ssl: true
+  ssl_cert: "${SNOWFLAKE_SSL_CERT}"
+  ssl_key: "${SNOWFLAKE_SSL_KEY}"
+
+# Warehouse Configuration
+warehouses:
+  # Development warehouse
+  development:
+    name: "DEV_WH"
+    size: "X-Small"
+    auto_suspend: 60
+    auto_resume: true
+    min_cluster_count: 1
+    max_cluster_count: 1
+    scaling_policy: "STANDARD"
+  
+  # Staging warehouse
+  staging:
+    name: "STAGING_WH"
+    size: "Small"
+    auto_suspend: 300
+    auto_resume: true
+    min_cluster_count: 1
+    max_cluster_count: 3
+    scaling_policy: "STANDARD"
+  
+  # Production warehouse
+  production:
+    name: "PROD_WH"
+    size: "Large"
+    auto_suspend: 600
+    auto_resume: true
+    min_cluster_count: 2
+    max_cluster_count: 10
+    scaling_policy: "ECONOMY"
+  
+  # Analytics warehouse
+  analytics:
+    name: "ANALYTICS_WH"
+    size: "X-Large"
+    auto_suspend: 1800
+    auto_resume: true
+    min_cluster_count: 1
+    max_cluster_count: 5
+    scaling_policy: "STANDARD"
+
+# Database Configuration
+databases:
+  # Main operational database
+  operational:
+    name: "METRIFY_OPERATIONAL"
+    comment: "Operational data for smart metering system"
+    retention_time: 7  # days
+  
+  # Analytics database
+  analytics:
+    name: "METRIFY_ANALYTICS"
+    comment: "Analytics and reporting data"
+    retention_time: 30  # days
+  
+  # Archive database
+  archive:
+    name: "METRIFY_ARCHIVE"
+    comment: "Long-term archived data"
+    retention_time: 2555  # days (7 years)
+
+# Schema Configuration
+schemas:
+  # Raw data schema
+  raw:
+    name: "RAW"
+    comment: "Raw data from external sources"
+    data_retention_time_in_days: 7
+  
+  # Staging schema
+  staging:
+    name: "STAGING"
+    comment: "Cleaned and validated data"
+    data_retention_time_in_days: 30
+  
+  # Marts schema
+  marts:
+    name: "MARTS"
+    comment: "Business-ready data marts"
+    data_retention_time_in_days: 90
+  
+  # Analytics schema
+  analytics:
+    name: "ANALYTICS"
+    comment: "Analytics and ML features"
+    data_retention_time_in_days: 365
+
+# Table Configuration
+tables:
+  # Smart Meter tables
+  smart_meter_readings:
+    name: "SMART_METER_READINGS"
+    schema: "RAW"
+    comment: "Raw smart meter reading data"
+    clustering_keys: ["METER_ID", "TIMESTAMP"]
+    data_retention_time_in_days: 7
+  
+  smart_meter_readings_staging:
+    name: "SMART_METER_READINGS_STAGING"
+    schema: "STAGING"
+    comment: "Cleaned smart meter reading data"
+    clustering_keys: ["METER_ID", "TIMESTAMP"]
+    data_retention_time_in_days: 30
+  
+  smart_meter_readings_mart:
+    name: "SMART_METER_READINGS_MART"
+    schema: "MARTS"
+    comment: "Business-ready smart meter data"
+    clustering_keys: ["METER_ID", "TIMESTAMP"]
+    data_retention_time_in_days: 90
+  
+  # Grid Operator tables
+  grid_status:
+    name: "GRID_STATUS"
+    schema: "RAW"
+    comment: "Raw grid status data"
+    clustering_keys: ["OPERATOR_ID", "TIMESTAMP"]
+    data_retention_time_in_days: 7
+  
+  grid_status_staging:
+    name: "GRID_STATUS_STAGING"
+    schema: "STAGING"
+    comment: "Cleaned grid status data"
+    clustering_keys: ["OPERATOR_ID", "TIMESTAMP"]
+    data_retention_time_in_days: 30
+  
+  # Weather tables
+  weather_observations:
+    name: "WEATHER_OBSERVATIONS"
+    schema: "RAW"
+    comment: "Raw weather observation data"
+    clustering_keys: ["STATION_ID", "TIMESTAMP"]
+    data_retention_time_in_days: 7
+  
+  weather_observations_staging:
+    name: "WEATHER_OBSERVATIONS_STAGING"
+    schema: "STAGING"
+    comment: "Cleaned weather observation data"
+    clustering_keys: ["STATION_ID", "TIMESTAMP"]
+    data_retention_time_in_days: 30
+
+# Data Loading Configuration
+data_loading:
+  # File formats
+  file_formats:
+    parquet:
+      name: "PARQUET_FORMAT"
+      type: "PARQUET"
+      compression: "SNAPPY"
+      binary_as_text: false
+    
+    json:
+      name: "JSON_FORMAT"
+      type: "JSON"
+      compression: "GZIP"
+      strip_outer_array: true
+    
+    csv:
+      name: "CSV_FORMAT"
+      type: "CSV"
+      compression: "GZIP"
+      field_delimiter: ","
+      record_delimiter: "\n"
+      skip_header: 1
+  
+  # Stages
+  stages:
+    s3_stage:
+      name: "S3_STAGE"
+      url: "s3://metrify-data/"
+      credentials: "AWS_KEY_ID='${AWS_ACCESS_KEY_ID}' AWS_SECRET_KEY='${AWS_SECRET_ACCESS_KEY}'"
+      file_format: "PARQUET_FORMAT"
+      copy_options:
+        on_error: "CONTINUE"
+        size_limit: 100000000  # 100MB
+    
+    local_stage:
+      name: "LOCAL_STAGE"
+      url: "@%LOCAL_STAGE"
+      file_format: "CSV_FORMAT"
+
+# Query Configuration
+query_config:
+  # Query timeout
+  query_timeout: 3600  # 1 hour
+  
+  # Result set limits
+  max_result_rows: 1000000
+  
+  # Query optimization
+  use_cached_result: true
+  use_any_result: false
+  
+  # Query history
+  query_history:
+    enabled: true
+    retention_days: 30
+
+# Security Configuration
+security:
+  # Network policies
+  network_policies:
+    - name: "METRIFY_NETWORK_POLICY"
+      allowed_ip_ranges: ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+      blocked_ip_ranges: []
+  
+  # Data masking
+  data_masking:
+    enabled: true
+    policies:
+      - column: "CUSTOMER_EMAIL"
+        function: "EMAIL"
+      - column: "CUSTOMER_PHONE"
+        function: "PHONE"
+  
+  # Row access policies
+  row_access_policies:
+    enabled: true
+    policies:
+      - name: "REGION_ACCESS_POLICY"
+        condition: "CURRENT_ROLE() IN ('ANALYST', 'ADMIN')"
+
+# Monitoring Configuration
+monitoring:
+  # Query monitoring
+  query_monitoring:
+    enabled: true
+    log_level: "INFO"
+    log_retention_days: 30
+  
+  # Resource monitoring
+  resource_monitoring:
+    enabled: true
+    alert_thresholds:
+      warehouse_utilization: 80
+      query_duration: 300  # seconds
+      storage_usage: 90  # percentage
+  
+  # Performance monitoring
+  performance_monitoring:
+    enabled: true
+    metrics_collection_interval: 60  # seconds
+    slow_query_threshold: 30  # seconds

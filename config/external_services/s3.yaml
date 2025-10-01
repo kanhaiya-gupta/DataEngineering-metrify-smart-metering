@@ -1,0 +1,196 @@
+# S3 Configuration
+# Settings for AWS S3 integration
+
+# Bucket Configuration
+buckets:
+  # Primary data bucket
+  primary:
+    name: "metrify-data"
+    region: "eu-central-1"
+    versioning: true
+    encryption: "AES256"
+    lifecycle_rules:
+      - id: "smart_meter_data"
+        status: "Enabled"
+        transitions:
+          - days: 30
+            storage_class: "STANDARD_IA"
+          - days: 90
+            storage_class: "GLACIER"
+          - days: 365
+            storage_class: "DEEP_ARCHIVE"
+        expiration:
+          days: 2555  # 7 years for compliance
+  
+  # Analytics bucket
+  analytics:
+    name: "metrify-analytics"
+    region: "eu-central-1"
+    versioning: true
+    encryption: "AES256"
+    lifecycle_rules:
+      - id: "analytics_data"
+        status: "Enabled"
+        transitions:
+          - days: 7
+            storage_class: "STANDARD_IA"
+          - days: 30
+            storage_class: "GLACIER"
+        expiration:
+          days: 1095  # 3 years
+  
+  # Backup bucket
+  backup:
+    name: "metrify-backup"
+    region: "eu-west-1"  # Different region for disaster recovery
+    versioning: true
+    encryption: "AES256"
+    lifecycle_rules:
+      - id: "backup_data"
+        status: "Enabled"
+        transitions:
+          - days: 30
+            storage_class: "STANDARD_IA"
+          - days: 90
+            storage_class: "GLACIER"
+        expiration:
+          days: 2555  # 7 years
+
+# Data Organization
+data_organization:
+  # Smart Meter Data
+  smart_meter:
+    prefix: "smart-meter-data/"
+    structure:
+      - "year={year}/"
+      - "month={month}/"
+      - "day={day}/"
+      - "meter_id={meter_id}/"
+      - "data.parquet"
+  
+  # Grid Operator Data
+  grid_operator:
+    prefix: "grid-operator-data/"
+    structure:
+      - "year={year}/"
+      - "month={month}/"
+      - "day={day}/"
+      - "operator_id={operator_id}/"
+      - "data.parquet"
+  
+  # Weather Data
+  weather:
+    prefix: "weather-data/"
+    structure:
+      - "year={year}/"
+      - "month={month}/"
+      - "day={day}/"
+      - "station_id={station_id}/"
+      - "data.parquet"
+  
+  # Analytics Data
+  analytics:
+    prefix: "analytics/"
+    structure:
+      - "year={year}/"
+      - "month={month}/"
+      - "report_type={report_type}/"
+      - "data.parquet"
+  
+  # Backup Data
+  backup:
+    prefix: "backup/"
+    structure:
+      - "year={year}/"
+      - "month={month}/"
+      - "day={day}/"
+      - "backup_type={backup_type}/"
+      - "backup.tar.gz"
+
+# Upload Configuration
+upload:
+  # Multipart upload settings
+  multipart_threshold: 104857600  # 100 MB
+  multipart_chunksize: 10485760   # 10 MB
+  max_concurrency: 10
+  
+  # Retry settings
+  max_retries: 3
+  retry_delay: 1  # seconds
+  exponential_backoff: true
+  
+  # Compression
+  compression: "gzip"
+  compression_level: 6
+
+# Download Configuration
+download:
+  # Connection settings
+  max_connections: 50
+  timeout: 300  # seconds
+  
+  # Caching
+  cache_enabled: true
+  cache_size_mb: 1024
+  cache_ttl_seconds: 3600
+  
+  # Retry settings
+  max_retries: 3
+  retry_delay: 1  # seconds
+
+# Security Configuration
+security:
+  # Access control
+  access_control:
+    type: "bucket_policy"
+    policy_file: "s3-bucket-policy.json"
+  
+  # Encryption
+  encryption:
+    server_side_encryption: "AES256"
+    kms_key_id: "${S3_KMS_KEY_ID}"
+  
+  # Access logging
+  access_logging:
+    enabled: true
+    target_bucket: "metrify-access-logs"
+    target_prefix: "s3-access-logs/"
+
+# Monitoring Configuration
+monitoring:
+  # CloudWatch metrics
+  cloudwatch_metrics:
+    enabled: true
+    detailed_metrics: true
+  
+  # Request metrics
+  request_metrics:
+    enabled: true
+    sampling_rate: 0.01  # 1% sampling
+  
+  # Storage metrics
+  storage_metrics:
+    enabled: true
+    frequency: "daily"
+
+# Cost Optimization
+cost_optimization:
+  # Intelligent tiering
+  intelligent_tiering:
+    enabled: true
+    archive_access_tier_days: 90
+    deep_archive_access_tier_days: 180
+  
+  # Lifecycle policies
+  lifecycle_policies:
+    enabled: true
+    transition_days:
+      standard_ia: 30
+      glacier: 90
+      deep_archive: 365
+  
+  # Storage class optimization
+  storage_class_optimization:
+    enabled: true
+    auto_optimize: true
+    optimization_threshold_days: 30

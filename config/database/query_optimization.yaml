@@ -1,0 +1,138 @@
+# Database Query Optimization Configuration
+# Settings for optimizing database performance and query execution
+
+# Query Timeout Settings
+timeouts:
+  default: 30  # seconds
+  analytics: 300  # 5 minutes for complex analytics queries
+  batch_operations: 600  # 10 minutes for batch operations
+  migration: 3600  # 1 hour for database migrations
+
+# Index Optimization
+indexes:
+  # Smart Meter indexes
+  smart_meter_readings:
+    - column: "meter_id"
+      type: "btree"
+      unique: false
+    - column: "timestamp"
+      type: "btree"
+      unique: false
+    - column: "created_at"
+      type: "btree"
+      unique: false
+    - column: "meter_id, timestamp"
+      type: "btree"
+      unique: false
+      name: "idx_meter_timestamp"
+  
+  # Grid Operator indexes
+  grid_status:
+    - column: "operator_id"
+      type: "btree"
+      unique: false
+    - column: "timestamp"
+      type: "btree"
+      unique: false
+    - column: "operator_id, timestamp"
+      type: "btree"
+      unique: false
+      name: "idx_operator_timestamp"
+  
+  # Weather Station indexes
+  weather_observations:
+    - column: "station_id"
+      type: "btree"
+      unique: false
+    - column: "timestamp"
+      type: "btree"
+      unique: false
+    - column: "station_id, timestamp"
+      type: "btree"
+      unique: false
+      name: "idx_station_timestamp"
+
+# Partitioning Strategy
+partitioning:
+  smart_meter_readings:
+    strategy: "range"
+    column: "timestamp"
+    interval: "monthly"
+    retention_months: 12
+  
+  grid_status:
+    strategy: "range"
+    column: "timestamp"
+    interval: "monthly"
+    retention_months: 12
+  
+  weather_observations:
+    strategy: "range"
+    column: "timestamp"
+    interval: "monthly"
+    retention_months: 12
+
+# Query Cache Settings
+query_cache:
+  enabled: true
+  size_mb: 256
+  ttl_seconds: 3600
+  max_query_length: 10000
+
+# Connection Settings
+connections:
+  # Connection string parameters
+  parameters:
+    application_name: "metrify-smart-metering"
+    statement_timeout: "30s"
+    idle_in_transaction_session_timeout: "60s"
+    lock_timeout: "10s"
+    tcp_keepalives_idle: 600
+    tcp_keepalives_interval: 30
+    tcp_keepalives_count: 3
+
+# Performance Monitoring
+performance_monitoring:
+  enabled: true
+  slow_query_threshold_ms: 1000
+  log_slow_queries: true
+  log_all_queries: false
+  metrics_collection_interval: 60
+
+# Backup Configuration
+backup:
+  # Automated backup settings
+  automated:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention_days: 30
+    compression: true
+    encryption: true
+  
+  # Manual backup settings
+  manual:
+    compression: true
+    encryption: true
+    include_schemas: ["public", "analytics"]
+    exclude_tables: ["temp_*", "log_*"]
+
+# Maintenance Tasks
+maintenance:
+  # Vacuum settings
+  vacuum:
+    enabled: true
+    schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+    analyze: true
+    full: false
+  
+  # Reindex settings
+  reindex:
+    enabled: true
+    schedule: "0 4 * * 0"  # Weekly on Sunday at 4 AM
+    concurrent: true
+  
+  # Statistics update
+  statistics:
+    enabled: true
+    schedule: "0 1 * * *"  # Daily at 1 AM
+    auto_analyze: true

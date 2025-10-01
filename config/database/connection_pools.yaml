@@ -1,0 +1,62 @@
+# Database Connection Pool Configuration
+# Optimized settings for different environments and workloads
+
+# Development Pool Settings
+development:
+  pool_size: 5
+  max_overflow: 10
+  pool_timeout: 30
+  pool_recycle: 3600
+  pool_pre_ping: true
+  echo: true
+  echo_pool: true
+
+# Staging Pool Settings
+staging:
+  pool_size: 20
+  max_overflow: 30
+  pool_timeout: 30
+  pool_recycle: 3600
+  pool_pre_ping: true
+  echo: false
+  echo_pool: false
+
+# Production Pool Settings
+production:
+  pool_size: 50
+  max_overflow: 100
+  pool_timeout: 30
+  pool_recycle: 3600
+  pool_pre_ping: true
+  echo: false
+  echo_pool: false
+
+# High Load Pool Settings (for peak times)
+high_load:
+  pool_size: 100
+  max_overflow: 200
+  pool_timeout: 60
+  pool_recycle: 1800
+  pool_pre_ping: true
+  echo: false
+  echo_pool: false
+
+# Read Replica Pool Settings
+read_replica:
+  pool_size: 30
+  max_overflow: 50
+  pool_timeout: 30
+  pool_recycle: 3600
+  pool_pre_ping: true
+  echo: false
+  echo_pool: false
+
+# Analytics Pool Settings (for heavy queries)
+analytics:
+  pool_size: 20
+  max_overflow: 40
+  pool_timeout: 120
+  pool_recycle: 3600
+  pool_pre_ping: true
+  echo: false
+  echo_pool: false

@@ -1,0 +1,345 @@
+# Monitoring Configuration
+# Settings for comprehensive monitoring and observability
+
+# Prometheus Configuration
+prometheus:
+  # Server settings
+  server:
+    port: 9090
+    host: "0.0.0.0"
+    retention_time: "15d"
+    storage_path: "/prometheus/data"
+  
+  # Scrape configuration
+  scrape_configs:
+    - job_name: "metrify-api"
+      static_configs:
+        - targets: ["api:8000"]
+      metrics_path: "/metrics"
+      scrape_interval: 15s
+      scrape_timeout: 10s
+    
+    - job_name: "metrify-workers"
+      static_configs:
+        - targets: ["worker-1:8001", "worker-2:8001", "worker-3:8001"]
+      metrics_path: "/metrics"
+      scrape_interval: 15s
+      scrape_timeout: 10s
+    
+    - job_name: "postgres"
+      static_configs:
+        - targets: ["postgres:5432"]
+      scrape_interval: 30s
+      scrape_timeout: 10s
+    
+    - job_name: "kafka"
+      static_configs:
+        - targets: ["kafka-1:9092", "kafka-2:9092", "kafka-3:9092"]
+      scrape_interval: 30s
+      scrape_timeout: 10s
+  
+  # Alerting rules
+  alerting_rules:
+    - name: "metrify_alerts"
+      rules:
+        - alert: "HighErrorRate"
+          expr: "rate(http_requests_total{status=~\"5..\"}[5m]) > 0.1"
+          for: "5m"
+          labels:
+            severity: "critical"
+          annotations:
+            summary: "High error rate detected"
+            description: "Error rate is {{ $value }} errors per second"
+        
+        - alert: "HighLatency"
+          expr: "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1"
+          for: "5m"
+          labels:
+            severity: "warning"
+          annotations:
+            summary: "High latency detected"
+            description: "95th percentile latency is {{ $value }} seconds"
+        
+        - alert: "DatabaseConnectionFailure"
+          expr: "up{job=\"postgres\"} == 0"
+          for: "1m"
+          labels:
+            severity: "critical"
+          annotations:
+            summary: "Database connection failed"
+            description: "PostgreSQL database is down"
+        
+        - alert: "KafkaConsumerLag"
+          expr: "kafka_consumer_lag_sum > 10000"
+          for: "5m"
+          labels:
+            severity: "warning"
+          annotations:
+            summary: "High Kafka consumer lag"
+            description: "Consumer lag is {{ $value }} messages"
+
+# Grafana Configuration
+grafana:
+  # Server settings
+  server:
+    port: 3000
+    host: "0.0.0.0"
+    root_url: "https://grafana.metrify.com"
+    domain: "grafana.metrify.com"
+  
+  # Database
+  database:
+    type: "postgres"
+    host: "postgres:5432"
+    name: "grafana"
+    user: "grafana"
+    password: "${GRAFANA_DB_PASSWORD}"
+    ssl_mode: "require"
+  
+  # Security
+  security:
+    admin_user: "admin"
+    admin_password: "${GRAFANA_ADMIN_PASSWORD}"
+    secret_key: "${GRAFANA_SECRET_KEY}"
+    cookie_secure: true
+    cookie_samesite: "strict"
+  
+  # Data sources
+  datasources:
+    - name: "Prometheus"
+      type: "prometheus"
+      url: "http://prometheus:9090"
+      access: "proxy"
+      is_default: true
+    
+    - name: "PostgreSQL"
+      type: "postgres"
+      url: "postgres:5432"
+      database: "metrify_prod"
+      user: "grafana"
+      password: "${GRAFANA_DB_PASSWORD}"
+    
+    - name: "Jaeger"
+      type: "jaeger"
+      url: "http://jaeger-query:16686"
+      access: "proxy"
+  
+  # Dashboards
+  dashboards:
+    - name: "Metrify System Overview"
+      file: "dashboards/system-overview.json"
+    
+    - name: "Smart Meter Analytics"
+      file: "dashboards/smart-meter-analytics.json"
+    
+    - name: "Grid Operator Monitoring"
+      file: "dashboards/grid-operator-monitoring.json"
+    
+    - name: "Weather Data Analysis"
+      file: "dashboards/weather-data-analysis.json"
+    
+    - name: "Data Quality Metrics"
+      file: "dashboards/data-quality-metrics.json"
+    
+    - name: "Performance Monitoring"
+      file: "dashboards/performance-monitoring.json"
+
+# Jaeger Configuration
+jaeger:
+  # Collector settings
+  collector:
+    port: 14268
+    host: "0.0.0.0"
+    storage:
+      type: "elasticsearch"
+      elasticsearch:
+        server_urls: "http://elasticsearch:9200"
+        username: "jaeger"
+        password: "${JAEGER_ES_PASSWORD}"
+        index_prefix: "jaeger"
+  
+  # Query settings
+  query:
+    port: 16686
+    host: "0.0.0.0"
+    base_path: "/jaeger"
+  
+  # Agent settings
+  agent:
+    port: 6831
+    host: "0.0.0.0"
+    reporter:
+      type: "grpc"
+      grpc:
+        host_port: "jaeger-collector:14250"
+  
+  # Sampling configuration
+  sampling:
+    type: "probabilistic"
+    param: 0.1  # 10% sampling rate
+  
+  # Service configuration
+  service:
+    name: "metrify-smart-metering"
+    tags:
+      environment: "production"
+      version: "1.0.0"
+
+# DataDog Configuration
+datadog:
+  # API settings
+  api:
+    key: "${DATADOG_API_KEY}"
+    app_key: "${DATADOG_APP_KEY}"
+    site: "datadoghq.eu"
+  
+  # Agent settings
+  agent:
+    host: "datadog-agent"
+    port: 8126
+    enabled: true
+  
+  # Metrics
+  metrics:
+    enabled: true
+    prefix: "metrify."
+    tags:
+      - "environment:production"
+      - "service:smart-metering"
+      - "version:1.0.0"
+  
+  # Logs
+  logs:
+    enabled: true
+    source: "python"
+    service: "metrify-smart-metering"
+    tags:
+      - "environment:production"
+      - "service:smart-metering"
+  
+  # APM
+  apm:
+    enabled: true
+    service: "metrify-smart-metering"
+    env: "production"
+    version: "1.0.0"
+    tags:
+      - "environment:production"
+      - "service:smart-metering"
+
+# Logging Configuration
+logging:
+  # Log levels
+  levels:
+    root: "INFO"
+    metrify: "DEBUG"
+    sqlalchemy: "WARNING"
+    kafka: "INFO"
+    boto3: "WARNING"
+  
+  # Log formats
+  formats:
+    console: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    file: "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s"
+    json: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "message": "%(message)s", "module": "%(module)s", "function": "%(funcName)s", "line": %(lineno)d}'
+  
+  # Handlers
+  handlers:
+    console:
+      class: "StreamHandler"
+      level: "INFO"
+      formatter: "console"
+      stream: "ext://sys.stdout"
+    
+    file:
+      class: "RotatingFileHandler"
+      level: "DEBUG"
+      formatter: "file"
+      filename: "/var/log/metrify/application.log"
+      maxBytes: 10485760  # 10MB
+      backupCount: 5
+    
+    json_file:
+      class: "RotatingFileHandler"
+      level: "DEBUG"
+      formatter: "json"
+      filename: "/var/log/metrify/application.json"
+      maxBytes: 10485760  # 10MB
+      backupCount: 5
+    
+    syslog:
+      class: "SysLogHandler"
+      level: "WARNING"
+      formatter: "json"
+      address: ["logs.metrify.com", 514]
+      facility: "local0"
+
+# Health Check Configuration
+health_checks:
+  # API health check
+  api:
+    endpoint: "/health"
+    timeout: 5
+    interval: 30
+    retries: 3
+  
+  # Database health check
+  database:
+    query: "SELECT 1"
+    timeout: 5
+    interval: 30
+    retries: 3
+  
+  # Kafka health check
+  kafka:
+    topic: "health-check"
+    timeout: 5
+    interval: 30
+    retries: 3
+  
+  # S3 health check
+  s3:
+    bucket: "metrify-health-check"
+    timeout: 10
+    interval: 60
+    retries: 3
+
+# Alerting Configuration
+alerting:
+  # Alert channels
+  channels:
+    - name: "slack"
+      type: "slack"
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      channel: "#alerts"
+      username: "Metrify Alerts"
+    
+    - name: "email"
+      type: "email"
+      smtp_host: "smtp.metrify.com"
+      smtp_port: 587
+      username: "${SMTP_USERNAME}"
+      password: "${SMTP_PASSWORD}"
+      from_email: "alerts@metrify.com"
+      to_emails: ["ops@metrify.com", "oncall@metrify.com"]
+    
+    - name: "pagerduty"
+      type: "pagerduty"
+      integration_key: "${PAGERDUTY_INTEGRATION_KEY}"
+      service_key: "${PAGERDUTY_SERVICE_KEY}"
+  
+  # Alert rules
+  rules:
+    - name: "Critical Alerts"
+      conditions:
+        - severity: "critical"
+        - status: "firing"
+      channels: ["slack", "email", "pagerduty"]
+      cooldown: 300  # 5 minutes
+    
+    - name: "Warning Alerts"
+      conditions:
+        - severity: "warning"
+        - status: "firing"
+      channels: ["slack", "email"]
+      cooldown: 900  # 15 minutes

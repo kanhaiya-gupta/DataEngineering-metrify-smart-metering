@@ -1,0 +1,83 @@
+# Jaeger Configuration for Metrify Smart Metering
+service_name: metrify-smart-metering
+disabled: false
+tags:
+  environment: production
+  cluster: metrify-cluster
+  version: 1.0.0
+
+# Sampling configuration
+sampler:
+  type: probabilistic
+  param: 0.1  # 10% sampling rate for production
+  max_traces_per_second: 1000
+  sampling_refresh_interval: 60
+
+# Agent configuration
+agent:
+  host: jaeger-agent
+  port: 6831
+  max_packet_size: 65000
+  buffer_flush_interval: 1s
+  buffer_max_count: 100
+
+# Reporter configuration
+reporter:
+  logSpans: true
+  agentHostPort: jaeger-agent:6831
+  queueSize: 100
+  bufferFlushInterval: 1s
+  localAgentHostPort: jaeger-agent:6831
+  collector_endpoint: http://jaeger-collector:14268/api/traces
+  user: jaeger
+  password: jaeger_password
+  http_headers:
+    Content-Type: application/json
+  timeout: 30s
+  retry_on_failure: true
+  max_retries: 3
+  retry_delay: 1s
+
+# Headers configuration
+headers:
+  jaeger-debug-header: jaeger-debug-id
+  jaeger-baggage-header: jaeger-baggage
+  trace_context_header_name: uber-trace-id
+  baggage_prefix: uberctx-
+
+# Baggage restrictions
+baggage_restrictions:
+  denyBaggageOnInitializationFailure: false
+  hostPort: jaeger-agent:5778
+  refreshInterval: 60s
+
+# Metrics configuration
+metrics:
+  factory: prometheus
+  prometheus:
+    namespace: metrify_jaeger
+    port: 14269
+    path: /metrics
+
+# Throttler configuration
+throttler:
+  hostPort: jaeger-agent:5778
+  refreshInterval: 60s
+  synchronousInitialization: false
+
+# Adaptive sampling
+adaptive_sampling:
+  hostPort: jaeger-agent:5778
+  refreshInterval: 60s
+  synchronousInitialization: false
+
+# Zipkin compatibility
+zipkin:
+  http_endpoint: http://jaeger-collector:9411/api/v2/spans
+  same_span: false
+  id_128bit: false
+
+# OpenTelemetry compatibility
+opentelemetry:
+  grpc_endpoint: jaeger-collector:4317
+  http_endpoint: http://jaeger-collector:4318/v1/traces

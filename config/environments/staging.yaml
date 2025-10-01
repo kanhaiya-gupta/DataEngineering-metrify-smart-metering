@@ -1,0 +1,209 @@
+# Staging Environment Configuration
+# Metrify Smart Metering Data Pipeline
+
+environment: staging
+debug: false
+log_level: INFO
+
+# Application Settings
+app:
+  name: "Metrify Smart Metering API"
+  version: "1.0.0"
+  description: "Staging environment for smart metering data pipeline"
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  reload: false
+
+# Database Configuration
+database:
+  host: "staging-db.metrify.internal"
+  port: 5432
+  name: "metrify_staging"
+  username: "metrify_staging"
+  password: "${DB_PASSWORD}"  # From environment variable
+  pool_size: 20
+  max_overflow: 30
+  pool_timeout: 30
+  pool_recycle: 3600
+  echo: false
+
+# Kafka Configuration
+kafka:
+  bootstrap_servers: ["staging-kafka-1.metrify.internal:9092", "staging-kafka-2.metrify.internal:9092"]
+  security_protocol: "SASL_SSL"
+  sasl_mechanism: "PLAIN"
+  sasl_username: "${KAFKA_USERNAME}"
+  sasl_password: "${KAFKA_PASSWORD}"
+  consumer_group: "metrify-staging"
+  auto_offset_reset: "latest"
+  enable_auto_commit: true
+  session_timeout_ms: 30000
+  heartbeat_interval_ms: 10000
+
+# S3 Configuration
+s3:
+  region: "eu-central-1"
+  bucket_name: "metrify-staging-data"
+  access_key_id: "${AWS_ACCESS_KEY_ID}"
+  secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+  endpoint_url: null
+  use_ssl: true
+
+# Snowflake Configuration
+snowflake:
+  account: "metrify-staging"
+  warehouse: "STAGING_WH"
+  database: "METRIFY_STAGING"
+  schema: "PUBLIC"
+  username: "${SNOWFLAKE_USERNAME}"
+  password: "${SNOWFLAKE_PASSWORD}"
+  role: "STAGING_ROLE"
+  region: "eu-central-1"
+
+# Airflow Configuration
+airflow:
+  webserver_url: "http://staging-airflow.metrify.internal:8080"
+  username: "${AIRFLOW_USERNAME}"
+  password: "${AIRFLOW_PASSWORD}"
+  api_url: "http://staging-airflow.metrify.internal:8080/api/v1"
+  dag_folder: "/opt/airflow/dags"
+
+# Monitoring Configuration
+monitoring:
+  # Prometheus
+  prometheus:
+    enabled: true
+    port: 9090
+    namespace: "metrify_staging"
+    subsystem: "smart_metering"
+  
+  # Grafana
+  grafana:
+    enabled: true
+    url: "http://staging-grafana.metrify.internal:3000"
+    username: "${GRAFANA_USERNAME}"
+    password: "${GRAFANA_PASSWORD}"
+    api_key: "${GRAFANA_API_KEY}"
+  
+  # Jaeger
+  jaeger:
+    enabled: true
+    agent_host: "staging-jaeger-agent.metrify.internal"
+    agent_port: 6831
+    collector_endpoint: "http://staging-jaeger-collector.metrify.internal:14268/api/traces"
+  
+  # DataDog
+  datadog:
+    enabled: true
+    api_key: "${DATADOG_API_KEY}"
+    app_key: "${DATADOG_APP_KEY}"
+    site: "datadoghq.eu"
+
+# Security Configuration
+security:
+  jwt_secret_key: "${JWT_SECRET_KEY}"
+  jwt_algorithm: "HS256"
+  jwt_expire_minutes: 30
+  refresh_token_expire_days: 7
+  password_min_length: 12
+  max_login_attempts: 3
+  lockout_duration_minutes: 30
+
+# Data Processing Configuration
+data_processing:
+  batch_size: 5000
+  max_retries: 5
+  retry_delay_seconds: 10
+  quality_threshold: 0.85
+  anomaly_detection_sensitivity: 0.3
+  
+  # Smart Meter Processing
+  smart_meter:
+    processing_interval_seconds: 30
+    batch_timeout_seconds: 180
+    max_batch_size: 50000
+  
+  # Grid Operator Processing
+  grid_operator:
+    processing_interval_seconds: 60
+    batch_timeout_seconds: 300
+    max_batch_size: 25000
+  
+  # Weather Processing
+  weather:
+    processing_interval_seconds: 300
+    batch_timeout_seconds: 600
+    max_batch_size: 10000
+
+# External API Configuration
+external_apis:
+  # Data Quality Service
+  data_quality:
+    base_url: "http://staging-data-quality.metrify.internal:8001"
+    timeout_seconds: 60
+    retry_attempts: 5
+  
+  # Anomaly Detection Service
+  anomaly_detection:
+    base_url: "http://staging-anomaly-detection.metrify.internal:8002"
+    timeout_seconds: 60
+    retry_attempts: 5
+  
+  # Grid Data Service
+  grid_data:
+    base_url: "http://staging-grid-data.metrify.internal:8003"
+    timeout_seconds: 60
+    retry_attempts: 5
+  
+  # Weather Data Service
+  weather_data:
+    base_url: "http://staging-weather-data.metrify.internal:8004"
+    timeout_seconds: 60
+    retry_attempts: 5
+  
+  # Alerting Service
+  alerting:
+    base_url: "http://staging-alerting.metrify.internal:8005"
+    timeout_seconds: 60
+    retry_attempts: 5
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_path: "/var/log/metrify/staging.log"
+  max_file_size_mb: 500
+  backup_count: 10
+  console_output: false
+
+# Performance Configuration
+performance:
+  # API Performance
+  api:
+    max_request_size_mb: 50
+    request_timeout_seconds: 60
+    rate_limit_per_minute: 5000
+  
+  # Database Performance
+  database:
+    query_timeout_seconds: 60
+    connection_pool_size: 50
+    max_overflow: 100
+  
+  # Kafka Performance
+  kafka:
+    max_poll_records: 1000
+    fetch_max_wait_ms: 1000
+    fetch_min_bytes: 1024
+
+# Feature Flags
+features:
+  enable_anomaly_detection: true
+  enable_weather_correlation: true
+  enable_real_time_processing: true
+  enable_batch_processing: true
+  enable_data_quality_checks: true
+  enable_alerting: true
+  enable_analytics: true
+  enable_forecasting: true
