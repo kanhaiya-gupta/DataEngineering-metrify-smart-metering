@@ -1,0 +1,194 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-webserver
+  labels:
+    app: airflow-webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-webserver
+  template:
+    metadata:
+      labels:
+        app: airflow-webserver
+    spec:
+      containers:
+      - name: airflow-webserver
+        image: apache/airflow:2.7.3
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AIRFLOW__CORE__EXECUTOR
+          value: "KubernetesExecutor"
+        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+          valueFrom:
+            secretKeyRef:
+              name: airflow-secrets
+              key: sql-alchemy-conn
+        - name: AIRFLOW__CORE__DAGS_FOLDER
+          value: "/opt/airflow/dags"
+        - name: AIRFLOW__CORE__PLUGINS_FOLDER
+          value: "/opt/airflow/plugins"
+        - name: AIRFLOW__CORE__BASE_LOG_FOLDER
+          value: "/opt/airflow/logs"
+        - name: AIRFLOW__CORE__DEFAULT_TIMEZONE
+          value: "Europe/Berlin"
+        - name: AIRFLOW__WEBSERVER__EXPOSE_CONFIG
+          value: "True"
+        - name: AIRFLOW__WEBSERVER__SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: airflow-secrets
+              key: secret-key
+        volumeMounts:
+        - name: dags-volume
+          mountPath: /opt/airflow/dags
+        - name: logs-volume
+          mountPath: /opt/airflow/logs
+        - name: plugins-volume
+          mountPath: /opt/airflow/plugins
+        - name: config-volume
+          mountPath: /opt/airflow/config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: dags-volume
+        configMap:
+          name: airflow-dags
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: airflow-logs-pvc
+      - name: plugins-volume
+        configMap:
+          name: airflow-plugins
+      - name: config-volume
+        configMap:
+          name: airflow-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-webserver-service
+spec:
+  selector:
+    app: airflow-webserver
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-scheduler
+  labels:
+    app: airflow-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-scheduler
+  template:
+    metadata:
+      labels:
+        app: airflow-scheduler
+    spec:
+      containers:
+      - name: airflow-scheduler
+        image: apache/airflow:2.7.3
+        env:
+        - name: AIRFLOW__CORE__EXECUTOR
+          value: "KubernetesExecutor"
+        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+          valueFrom:
+            secretKeyRef:
+              name: airflow-secrets
+              key: sql-alchemy-conn
+        - name: AIRFLOW__CORE__DAGS_FOLDER
+          value: "/opt/airflow/dags"
+        - name: AIRFLOW__CORE__PLUGINS_FOLDER
+          value: "/opt/airflow/plugins"
+        - name: AIRFLOW__CORE__BASE_LOG_FOLDER
+          value: "/opt/airflow/logs"
+        - name: AIRFLOW__CORE__DEFAULT_TIMEZONE
+          value: "Europe/Berlin"
+        command: ["scheduler"]
+        volumeMounts:
+        - name: dags-volume
+          mountPath: /opt/airflow/dags
+        - name: logs-volume
+          mountPath: /opt/airflow/logs
+        - name: plugins-volume
+          mountPath: /opt/airflow/plugins
+        - name: config-volume
+          mountPath: /opt/airflow/config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: dags-volume
+        configMap:
+          name: airflow-dags
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: airflow-logs-pvc
+      - name: plugins-volume
+        configMap:
+          name: airflow-plugins
+      - name: config-volume
+        configMap:
+          name: airflow-config
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: airflow-logs-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-dags
+data:
+  smart_meter_pipeline_dag.py: |
+    # DAG content will be mounted here
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-plugins
+data:
+  # Plugin content will be mounted here
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-config
+data:
+  config.yaml: |
+    # Configuration content will be mounted here
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: airflow-secrets
+type: Opaque
+data:
+  sql-alchemy-conn: # Base64 encoded connection string
+  secret-key: # Base64 encoded secret key

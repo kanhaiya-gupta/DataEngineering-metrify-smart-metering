@@ -1,0 +1,62 @@
+name: 'metrify_analytics'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'metrify_analytics'
+
+# These configurations specify where dbt should look for different types of files.
+# The `model-paths` config, for example, states that models in this project can be
+# found in the "models/" directory. You probably won't need to change these!
+model-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"  # directory which will store compiled SQL files
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+# Configuring models
+# Full documentation: https://docs.getdbt.com/reference/model-configs
+models:
+  metrify_analytics:
+    # Config indicated by + and applies to all files under models/example/
+    +materialized: table
+    +schema: analytics
+    staging:
+      +materialized: view
+      +schema: staging
+    marts:
+      +materialized: table
+      +schema: marts
+    metrics:
+      +materialized: table
+      +schema: metrics
+
+# Seeds configuration
+seeds:
+  metrify_analytics:
+    +schema: raw
+    +column_types:
+      meter_id: varchar(50)
+      timestamp: timestamp
+      consumption_kwh: number(10,3)
+      voltage: number(5,2)
+      current: number(5,2)
+      power_factor: number(3,2)
+      frequency: number(4,2)
+      temperature: number(4,2)
+      humidity: number(5,2)
+      data_quality_score: number(3,2)
+
+# Variables
+vars:
+  # Default values that can be overridden
+  start_date: '2024-01-01'
+  end_date: '2024-12-31'
+  data_quality_threshold: 0.8
+  timezone: 'Europe/Berlin'

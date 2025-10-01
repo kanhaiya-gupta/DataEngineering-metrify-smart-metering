@@ -1,0 +1,109 @@
+# Metrify Smart Metering Data Pipeline Configuration
+
+# Environment settings
+environment: "dev"  # dev, staging, prod
+
+# Database connections
+databases:
+  snowflake:
+    account: "your-account.snowflakecomputing.com"
+    user: "your-username"
+    password: "your-password"
+    warehouse: "COMPUTE_WH"
+    database: "METRIFY_ANALYTICS"
+    schema: "RAW"
+    role: "DATA_ENGINEER"
+  
+  postgres:
+    host: "your-postgres-host"
+    port: 5432
+    database: "metrify_ops"
+    user: "your-username"
+    password: "your-password"
+
+# AWS Configuration
+aws:
+  region: "eu-central-1"
+  s3_bucket: "metrify-smart-metering-data"
+  kinesis_stream: "smart-meter-stream"
+  access_key_id: "your-access-key"
+  secret_access_key: "your-secret-key"
+
+# Kafka Configuration
+kafka:
+  bootstrap_servers: ["localhost:9092"]
+  security_protocol: "PLAINTEXT"
+  sasl_mechanism: "PLAIN"
+  sasl_username: "your-username"
+  sasl_password: "your-password"
+  topics:
+    smart_meter_data: "smart-meter-readings"
+    grid_status: "grid-operator-status"
+    energy_pricing: "energy-market-pricing"
+
+# Data Sources
+data_sources:
+  smart_meters:
+    api_endpoint: "https://api.metrify.com/v1/meters"
+    batch_size: 1000
+    polling_interval: 300  # seconds
+    retry_attempts: 3
+  
+  grid_operators:
+    - name: "TenneT"
+      api_endpoint: "https://api.tennet.org/v1/grid-status"
+      api_key: "your-tennet-key"
+    - name: "50Hertz"
+      api_endpoint: "https://api.50hertz.com/v1/grid-status"
+      api_key: "your-50hertz-key"
+  
+  weather:
+    api_endpoint: "https://api.openweathermap.org/data/2.5/weather"
+    api_key: "your-weather-key"
+    cities: ["Berlin", "Munich", "Hamburg", "Cologne"]
+
+# Data Quality Rules
+data_quality:
+  smart_meter_readings:
+    required_fields: ["meter_id", "timestamp", "consumption_kwh", "voltage", "current"]
+    validations:
+      consumption_kwh:
+        min_value: 0
+        max_value: 1000
+      voltage:
+        min_value: 200
+        max_value: 250
+      current:
+        min_value: 0
+        max_value: 100
+
+# Monitoring & Alerting
+monitoring:
+  datadog:
+    api_key: "your-datadog-key"
+    app_key: "your-datadog-app-key"
+    site: "datadoghq.eu"
+  
+  alerts:
+    data_latency_threshold: 300  # seconds
+    error_rate_threshold: 0.05  # 5%
+    data_quality_threshold: 0.95  # 95%
+
+# Airflow Configuration
+airflow:
+  dag_folder: "/opt/airflow/dags"
+  max_active_runs: 10
+  default_args:
+    owner: "data-engineering"
+    retries: 3
+    retry_delay: 300
+    email_on_failure: true
+    email_on_retry: false
+
+# dbt Configuration
+dbt:
+  project_dir: "/opt/dbt/metrify_analytics"
+  profiles_dir: "/opt/dbt/profiles"
+  target: "dev"
+  threads: 4
+  full_refresh: false
