@@ -38,6 +38,14 @@ graph TB
         CACHE[(Redis Cache<br/>⚡ Multi-level Caching)]
     end
 
+    %% Infrastructure
+    subgraph "🏗️ Infrastructure"
+        DOCKER[Docker<br/>🐳 Containerization]
+        K8S[Kubernetes<br/>☸️ Orchestration]
+        TERRAFORM[Multi-Cloud Terraform<br/>🏗️ AWS/Azure/GCP]
+        PERFORMANCE[Performance<br/>⚡ Optimization]
+    end
+
     %% Monitoring & Observability
     subgraph "📈 Monitoring & Observability"
         DATADOG[DataDog<br/>📊 Metrics & Logs]
@@ -46,14 +54,6 @@ graph TB
         JAEGER[Jaeger<br/>🔍 Distributed Tracing]
         QUALITY[Data Quality<br/>✅ Great Expectations]
         GOVERNANCE[Data Governance<br/>🏛️ Apache Atlas]
-    end
-
-    %% Infrastructure
-    subgraph "🏗️ Infrastructure"
-        DOCKER[Docker<br/>🐳 Containerization]
-        K8S[Kubernetes<br/>☸️ Orchestration]
-        TERRAFORM[Multi-Cloud Terraform<br/>🏗️ AWS/Azure/GCP]
-        PERFORMANCE[Performance<br/>⚡ Optimization]
     end
 
     %% Data Flow
