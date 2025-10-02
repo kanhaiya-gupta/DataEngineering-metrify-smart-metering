@@ -1,0 +1,20 @@
+{
+  "generated_at": "2025-10-02T13:28:11.321072",
+  "environment": "development",
+  "total_files": 6,
+  "total_records": 2772458,
+  "results": {
+    "smart_meters": {
+      "meters": "data/raw/smart_meters/smart_meters.csv",
+      "readings": "data/raw/smart_meters/smart_meter_readings.csv"
+    },
+    "weather": {
+      "stations": "data/raw/weather_stations/weather_stations.csv",
+      "observations": "data/raw/weather_stations/weather_observations.csv"
+    },
+    "grid_operators": {
+      "operators": "data/raw/grid_operators/grid_operators.csv",
+      "statuses": "data/raw/grid_operators/grid_status.csv"
+    }
+  }
+}
