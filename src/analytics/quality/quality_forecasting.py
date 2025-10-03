@@ -690,3 +690,5 @@ class QualityForecasting:
             accuracy_metrics={},
             recommendations=[f"Forecast failed for {metric}: {error}"]
         )
+
+

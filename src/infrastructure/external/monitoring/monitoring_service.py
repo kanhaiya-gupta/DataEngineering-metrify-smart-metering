@@ -12,7 +12,7 @@ from .prometheus.prometheus_client import PrometheusClient
 from .grafana.grafana_client import GrafanaClient
 from .jaeger.jaeger_client import JaegerClient
 from .datadog.datadog_client import DataDogClient
-from ...core.exceptions.domain_exceptions import InfrastructureError
+from src.core.exceptions.domain_exceptions import InfrastructureError
 
 logger = logging.getLogger(__name__)
 

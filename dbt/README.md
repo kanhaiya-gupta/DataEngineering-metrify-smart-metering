@@ -46,15 +46,45 @@ dbt/
 
 ### Installation
 
-1. **Install dependencies:**
+1. **Install Python dependencies:**
    ```bash
+   # From the project root directory
    pip install -r requirements.txt
    ```
+   
+   **Important:** The main `requirements.txt` only includes pip-installable packages. dbt packages like `dbt-utils`, `dbt-expectations`, etc. are NOT pip packages and should not be installed with pip.
 
 2. **Install dbt packages:**
    ```bash
+   # Navigate to the dbt directory
+   cd dbt
+   
+   # Install dbt packages (dbt-utils, dbt-expectations, etc.)
    dbt deps
    ```
+   
+   This will download dbt packages into the `dbt_modules/` directory based on `packages.yml`.
+
+### Package Installation Explained
+
+**Pip Packages (in requirements.txt):**
+- `dbt-core` - Core dbt functionality
+- `dbt-postgres` - PostgreSQL adapter
+- `dbt-snowflake` - Snowflake adapter
+- All other Python libraries
+
+**dbt Packages (in packages.yml):**
+- `dbt-utils` - Utility macros and functions
+- `dbt-expectations` - Data quality tests
+- `dbt-codegen` - Code generation utilities
+- `dbt-audit-helper` - Audit and lineage tools
+- `dbt-external-tables` - External table management
+- `dbt-date` - Date/time utilities
+
+**Why the distinction?**
+- dbt packages contain SQL macros and are managed by dbt's package manager
+- They cannot be installed with pip because they don't have Python setup files
+- Always use `dbt deps` for dbt packages and `pip install` for Python packages
 
 3. **Configure database connection:**
    - Copy `profiles.yml` to `~/.dbt/profiles.yml`

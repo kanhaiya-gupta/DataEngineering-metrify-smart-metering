@@ -13,6 +13,7 @@ class QualityTier(Enum):
     Represents the quality level of data collected from smart meters
     """
     
+    UNKNOWN = "unknown"     # Unknown quality (default for new data)
     HIGH = "high"           # Excellent data quality (90-100%)
     MEDIUM = "medium"       # Good data quality (70-89%)
     LOW = "low"             # Poor data quality (50-69%)
@@ -22,6 +23,7 @@ class QualityTier(Enum):
     def min_score(self) -> float:
         """Get the minimum quality score for this tier"""
         score_map = {
+            QualityTier.UNKNOWN: 0.0,
             QualityTier.HIGH: 0.9,
             QualityTier.MEDIUM: 0.7,
             QualityTier.LOW: 0.5,
@@ -33,6 +35,7 @@ class QualityTier(Enum):
     def max_score(self) -> float:
         """Get the maximum quality score for this tier"""
         score_map = {
+            QualityTier.UNKNOWN: 1.0,
             QualityTier.HIGH: 1.0,
             QualityTier.MEDIUM: 0.89,
             QualityTier.LOW: 0.69,
@@ -54,6 +57,7 @@ class QualityTier(Enum):
     def priority(self) -> int:
         """Get the priority level (higher number = higher priority)"""
         priority_map = {
+            QualityTier.UNKNOWN: 0,
             QualityTier.CRITICAL: 4,
             QualityTier.LOW: 3,
             QualityTier.MEDIUM: 2,

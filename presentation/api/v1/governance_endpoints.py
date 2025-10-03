@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 import pandas as pd
 
 # Import governance components
-from src.governance.lineage import AtlasIntegration, LineageTracker, LineageVisualizer
+from src.governance.lineage import AtlasIntegration, AtlasConfig, LineageTracker, LineageVisualizer
 from src.governance.compliance import (
     GDPRProcessor, PrivacyController, AuditLogger,
     ConsentManager, DataSubjectProcessor, RetentionPolicyEngine
@@ -26,7 +26,7 @@ router = APIRouter()
 
 # Initialize governance components
 atlas_integration = AtlasIntegration(
-    AtlasIntegration.AtlasConfig(
+    AtlasConfig(
         base_url="http://localhost:21000",
         username="admin",
         password="admin"

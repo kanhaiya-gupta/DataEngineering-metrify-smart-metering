@@ -24,6 +24,10 @@ class MeterNotFoundError(DomainException):
         self.meter_id = meter_id
 
 
+# Alias for backward compatibility
+MeterNotFoundException = MeterNotFoundError
+
+
 class InvalidMeterOperationError(DomainException):
     """Raised when an invalid operation is attempted on a smart meter"""
     

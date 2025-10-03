@@ -14,7 +14,7 @@ from datetime import datetime
 import json
 
 # ML imports
-from src.ml.serving.model_server import MLModelServer
+from src.ml.serving.model_server import ModelServer
 from src.ml.serving.ab_testing import get_ab_test_manager, ABTestConfig
 from src.ml.features.feature_store import FeatureStore, FeatureStoreConfig
 from src.ml.monitoring.model_monitor import ModelMonitor
@@ -84,7 +84,7 @@ class ModelInfoResponse(BaseModel):
 # Dependency injection
 async def get_ml_server():
     """Get ML server instance"""
-    return MLModelServer()
+    return ModelServer()
 
 async def get_feature_store():
     """Get feature store instance"""
@@ -143,7 +143,7 @@ async def health_check():
 async def predict(
     request: PredictionRequest,
     background_tasks: BackgroundTasks,
-    ml_server: MLModelServer = Depends(get_ml_server),
+    ml_server: ModelServer = Depends(get_ml_server),
     feature_store: FeatureStore = Depends(get_feature_store),
     ab_manager = Depends(get_ab_manager)
 ):
@@ -218,7 +218,7 @@ async def predict(
 async def predict_batch(
     request: BatchPredictionRequest,
     background_tasks: BackgroundTasks,
-    ml_server: MLModelServer = Depends(get_ml_server)
+    ml_server: ModelServer = Depends(get_ml_server)
 ):
     """Make batch predictions"""
     start_time = time.time()
@@ -263,7 +263,7 @@ async def predict_batch(
 @router.get("/model/{model_name}/info", response_model=ModelInfoResponse)
 async def get_model_info(
     model_name: str,
-    ml_server: MLModelServer = Depends(get_ml_server)
+    ml_server: ModelServer = Depends(get_ml_server)
 ):
     """Get information about a specific model"""
     try:

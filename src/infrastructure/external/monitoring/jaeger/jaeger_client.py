@@ -27,7 +27,7 @@ except ImportError:
     ScopeManager = None
     Scope = None
 
-from ....core.exceptions.domain_exceptions import InfrastructureError
+from src.core.exceptions.domain_exceptions import InfrastructureError
 
 logger = logging.getLogger(__name__)
 

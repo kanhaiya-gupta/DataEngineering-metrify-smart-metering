@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from enum import Enum
 
-from ..entities.weather_station import WeatherObservation
+from ..value_objects.weather_observation import WeatherObservation
 
 
 class EventType(Enum):

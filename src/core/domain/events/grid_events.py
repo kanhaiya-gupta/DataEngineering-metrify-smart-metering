@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from enum import Enum
 
-from ..entities.grid_operator import GridStatus
+from ..value_objects.grid_status import GridStatus
 
 
 class EventType(Enum):

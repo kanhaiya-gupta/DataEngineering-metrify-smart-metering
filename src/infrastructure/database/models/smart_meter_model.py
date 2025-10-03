@@ -52,7 +52,7 @@ class SmartMeterModel(Base):
     
     # Technical details
     firmware_version = Column(String(50), nullable=False, default="1.0.0")
-    metadata = Column(JSON, nullable=True)
+    meter_metadata = Column(JSON, nullable=True)
     
     # Version for optimistic locking
     version = Column(Integer, nullable=False, default=0)

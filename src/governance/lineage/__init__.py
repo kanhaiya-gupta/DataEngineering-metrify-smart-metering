@@ -7,12 +7,13 @@ This module provides data lineage tracking and visualization capabilities:
 - Interactive lineage visualization and impact analysis
 """
 
-from .atlas_integration import AtlasIntegration
+from .atlas_integration import AtlasIntegration, AtlasConfig
 from .lineage_tracker import LineageTracker
 from .lineage_visualizer import LineageVisualizer
 
 __all__ = [
     "AtlasIntegration",
+    "AtlasConfig",
     "LineageTracker",
     "LineageVisualizer"
 ]

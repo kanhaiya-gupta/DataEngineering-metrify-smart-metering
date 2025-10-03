@@ -9,8 +9,8 @@ from typing import List, Optional, Dict, Any
 from enum import Enum
 
 from ..value_objects.location import Location
+from ..value_objects.weather_observation import WeatherObservation
 from ..enums.weather_station_status import WeatherStationStatus
-from ..events.weather_events import WeatherDataRecordedEvent, WeatherAnomalyDetectedEvent
 
 
 class WeatherStationType(Enum):
@@ -19,39 +19,6 @@ class WeatherStationType(Enum):
     MANUAL = "manual"           # Manual observation station
     MOBILE = "mobile"           # Mobile weather station
     SATELLITE = "satellite"     # Satellite-based data
-
-
-@dataclass
-class WeatherObservation:
-    """A single weather observation"""
-    timestamp: datetime
-    temperature_celsius: float
-    humidity_percent: float
-    pressure_hpa: float
-    wind_speed_ms: float
-    wind_direction_degrees: float
-    cloud_cover_percent: float
-    visibility_km: float
-    uv_index: Optional[float] = None
-    precipitation_mm: Optional[float] = None
-    data_quality_score: float = 1.0
-    
-    def __post_init__(self):
-        """Validate weather observation data"""
-        if not (-50 <= self.temperature_celsius <= 60):
-            raise ValueError("Temperature must be between -50°C and 60°C")
-        if not (0 <= self.humidity_percent <= 100):
-            raise ValueError("Humidity must be between 0% and 100%")
-        if not (950 <= self.pressure_hpa <= 1050):
-            raise ValueError("Pressure must be between 950hPa and 1050hPa")
-        if not (0 <= self.wind_speed_ms <= 100):
-            raise ValueError("Wind speed must be between 0m/s and 100m/s")
-        if not (0 <= self.wind_direction_degrees <= 360):
-            raise ValueError("Wind direction must be between 0° and 360°")
-        if not (0 <= self.cloud_cover_percent <= 100):
-            raise ValueError("Cloud cover must be between 0% and 100%")
-        if not (0 <= self.visibility_km <= 50):
-            raise ValueError("Visibility must be between 0km and 50km")
 
 
 @dataclass

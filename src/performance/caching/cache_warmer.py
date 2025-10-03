@@ -539,3 +539,5 @@ class CacheWarmer:
             
         except Exception as e:
             logger.error(f"Error stopping cache warmer: {str(e)}")
+
+

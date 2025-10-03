@@ -31,7 +31,6 @@ class DomainEvent:
     event_type: EventType
     occurred_at: datetime
     aggregate_id: str
-    version: int = 1
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert event to dictionary for serialization"""
@@ -40,7 +39,7 @@ class DomainEvent:
             "event_type": self.event_type.value,
             "occurred_at": self.occurred_at.isoformat(),
             "aggregate_id": self.aggregate_id,
-            "version": self.version
+            "version": getattr(self, 'version', 1)
         }
 
 
@@ -51,6 +50,7 @@ class MeterRegisteredEvent(DomainEvent):
     meter_id: str
     location: Location
     registered_at: datetime
+    version: int = 1
     
     def __post_init__(self):
         """Set event properties after initialization"""

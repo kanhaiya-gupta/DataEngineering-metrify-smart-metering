@@ -351,7 +351,7 @@ class WeatherStationSearchDTO(BaseModel):
     page: int = Field(default=1, ge=1, description="Page number")
     page_size: int = Field(default=20, ge=1, le=100, description="Page size")
     sort_by: str = Field(default="created_at", description="Sort field")
-    sort_order: str = Field(default="desc", regex="^(asc|desc)$", description="Sort order")
+    sort_order: str = Field(default="desc", pattern="^(asc|desc)$", description="Sort order")
     
     class Config:
         json_schema_extra = {

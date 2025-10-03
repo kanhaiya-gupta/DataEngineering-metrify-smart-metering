@@ -13,6 +13,6 @@ from .feature_serving import FeatureServing
 
 __all__ = [
     "FeatureStore",
-    "FeatureValidator", 
+    "FeatureValidator",
     "FeatureServing"
 ]

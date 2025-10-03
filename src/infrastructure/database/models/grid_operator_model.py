@@ -52,7 +52,7 @@ class GridOperatorModel(Base):
     grid_capacity_mw = Column(Float, nullable=True)
     voltage_level_kv = Column(Float, nullable=True)
     coverage_area_km2 = Column(Float, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    operator_metadata = Column(JSON, nullable=True)
     
     # Version for optimistic locking
     version = Column(Integer, nullable=False, default=0)

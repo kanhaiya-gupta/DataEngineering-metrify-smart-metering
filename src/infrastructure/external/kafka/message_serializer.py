@@ -7,7 +7,7 @@ import json
 import pickle
 import avro.schema
 import avro.io
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, List
 from datetime import datetime
 from io import BytesIO
 import logging

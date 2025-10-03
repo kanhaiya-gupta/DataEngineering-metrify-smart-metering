@@ -8,8 +8,8 @@ import smtplib
 import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import logging
 
 from ....core.interfaces.external.alerting_service import IAlertingService, AlertSeverity, AlertType
@@ -372,7 +372,7 @@ class AlertingService(IAlertingService):
                 return
             
             # Create message
-            msg = MimeMultipart()
+            msg = MIMEMultipart()
             msg['From'] = self.smtp_username
             msg['To'] = ', '.join(alert_record['recipients'])
             msg['Subject'] = f"[{alert_record['severity'].upper()}] {alert_record['alert_type']}"
@@ -388,7 +388,7 @@ class AlertingService(IAlertingService):
             {json.dumps(alert_record['data'], indent=2)}
             """
             
-            msg.attach(MimeText(body, 'plain'))
+            msg.attach(MIMEText(body, 'plain'))
             
             # Send email
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:

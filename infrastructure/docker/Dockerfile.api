@@ -20,11 +20,23 @@ RUN apt-get update && apt-get install -y \
 # Create and set working directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Copy modular requirements first for better caching
+COPY requirements_core.txt .
+COPY requirements_ml.txt .
+COPY requirements_cloud.txt .
+COPY requirements_streaming.txt .
+COPY requirements_dbt.txt .
+COPY requirements_quality.txt .
+COPY requirements_monitoring.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies in stages to avoid conflicts
+RUN pip install --no-cache-dir -r requirements_core.txt && \
+    pip install --no-cache-dir -r requirements_streaming.txt && \
+    pip install --no-cache-dir -r requirements_cloud.txt && \
+    pip install --no-cache-dir -r requirements_quality.txt && \
+    pip install --no-cache-dir -r requirements_monitoring.txt && \
+    pip install --no-cache-dir -r requirements_ml.txt && \
+    pip install --no-cache-dir -r requirements_dbt.txt
 
 # Production stage
 FROM python:3.11-slim as production
@@ -71,4 +83,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Default command
-CMD ["python", "-m", "uvicorn", "src.presentation.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["python", "-m", "uvicorn", "presentation.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

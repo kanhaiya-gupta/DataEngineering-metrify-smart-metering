@@ -28,6 +28,17 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 
 
+# Pydantic models for API requests
+class PredictionRequest(BaseModel):
+    data: List[List[float]]
+    model_name: Optional[str] = None
+
+
+class BatchPredictionRequest(BaseModel):
+    data: List[List[List[float]]]
+    model_name: Optional[str] = None
+
+
 @dataclass
 class ServerConfig:
     """Configuration for model server"""
@@ -332,17 +343,6 @@ class ModelServer:
     def run_server(self):
         """Run the server (blocking)"""
         self.start_server()
-
-
-# Pydantic models for API requests
-class PredictionRequest(BaseModel):
-    data: List[List[float]]
-    model_name: Optional[str] = None
-
-
-class BatchPredictionRequest(BaseModel):
-    data: List[List[List[float]]]
-    model_name: Optional[str] = None
 
 
 # Example usage and testing

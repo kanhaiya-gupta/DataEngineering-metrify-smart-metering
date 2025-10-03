@@ -8,10 +8,10 @@ import logging
 
 from ....core.domain.events.meter_events import (
     MeterRegisteredEvent,
-    MeterStatusUpdatedEvent,
-    MeterReadingAddedEvent,
-    MeterQualityUpdatedEvent,
-    MeterFaultDetectedEvent
+    MeterStatusChangedEvent,
+    MeterReadingRecordedEvent,
+    MeterAnomalyDetectedEvent,
+    MeterMaintenanceScheduledEvent
 )
 from ....core.interfaces.external.alerting_service import IAlertingService
 from ....infrastructure.external.kafka.kafka_producer import KafkaProducer
@@ -73,7 +73,7 @@ class MeterEventHandlers:
             logger.error(f"Error handling meter registered event: {str(e)}")
             # Don't raise exception to avoid breaking the main flow
     
-    async def handle_meter_status_updated(self, event: MeterStatusUpdatedEvent) -> None:
+    async def handle_meter_status_changed(self, event: MeterStatusChangedEvent) -> None:
         """Handle meter status update event"""
         try:
             logger.info(f"Handling meter status updated event: {event.meter_id}")
@@ -110,7 +110,7 @@ class MeterEventHandlers:
             logger.error(f"Error handling meter status updated event: {str(e)}")
             # Don't raise exception to avoid breaking the main flow
     
-    async def handle_meter_reading_added(self, event: MeterReadingAddedEvent) -> None:
+    async def handle_meter_reading_recorded(self, event: MeterReadingRecordedEvent) -> None:
         """Handle meter reading added event"""
         try:
             logger.info(f"Handling meter reading added event: {event.meter_id}")
@@ -147,7 +147,7 @@ class MeterEventHandlers:
             logger.error(f"Error handling meter reading added event: {str(e)}")
             # Don't raise exception to avoid breaking the main flow
     
-    async def handle_meter_quality_updated(self, event: MeterQualityUpdatedEvent) -> None:
+    async def handle_meter_anomaly_detected(self, event: MeterAnomalyDetectedEvent) -> None:
         """Handle meter quality update event"""
         try:
             logger.info(f"Handling meter quality updated event: {event.meter_id}")
@@ -186,7 +186,7 @@ class MeterEventHandlers:
             logger.error(f"Error handling meter quality updated event: {str(e)}")
             # Don't raise exception to avoid breaking the main flow
     
-    async def handle_meter_fault_detected(self, event: MeterFaultDetectedEvent) -> None:
+    async def handle_meter_maintenance_scheduled(self, event: MeterMaintenanceScheduledEvent) -> None:
         """Handle meter fault detected event"""
         try:
             logger.info(f"Handling meter fault detected event: {event.meter_id}")

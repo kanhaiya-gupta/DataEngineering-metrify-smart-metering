@@ -16,12 +16,14 @@ import asyncio
 
 import mlflow
 import mlflow.tensorflow
-from evidently import ColumnMapping
-from evidently.report import Report
-from evidently.metric_preset import DataDriftPreset, TargetDriftPreset, DataQualityPreset
-from evidently.metrics import *
-from evidently.test_suite import TestSuite
-from evidently.test_preset import DataStabilityTestPreset
+from evidently.core.datasets import ColumnMapping
+from evidently import Report
+from evidently.metrics import (
+    ValueDrift, DatasetMissingValueCount, DuplicatedRowCount, EmptyRowsCount,
+    DriftedColumnsCount, DatasetMissingValueCount, RowCount, 
+    MeanValue, StdValue, MinValue, MaxValue, QuantileValue,
+    F1Score, Precision, Recall, Accuracy, LogLoss, MAE, RMSE, R2Score
+)
 
 logger = logging.getLogger(__name__)
 
@@ -105,11 +107,9 @@ class ModelMonitor:
             categorical_features=self.reference_data.select_dtypes(include=['object']).columns.tolist()
         )
         
-        # Create drift report
+        # Create drift report with available metrics for Evidently v0.7.x
         drift_report = Report(metrics=[
-            DataDriftPreset(),
-            TargetDriftPreset(),
-            DataQualityPreset()
+            ValueDrift(column_name=col) for col in column_mapping.numerical_features[:5]  # Limit to first 5 features
         ])
         
         drift_report.run(
@@ -118,28 +118,50 @@ class ModelMonitor:
             column_mapping=column_mapping
         )
         
-        # Extract drift results
+        # Extract drift results using new Evidently v0.7.x API
         drift_results = {}
         
-        # Check numerical features drift
-        for feature in column_mapping.numerical_features:
-            try:
-                drift_metric = drift_report.get_metric(DataDriftPreset()).get_result()
-                if feature in drift_metric.drift_by_columns:
-                    drift_score = drift_metric.drift_by_columns[feature].drift_score
-                    drift_detected = drift_metric.drift_by_columns[feature].drift_detected
+        try:
+            # Get full results dictionary
+            drift_results_raw = drift_report.as_dict()
+            
+            # Extract data drift results from ValueDrift metrics
+            if 'metrics' in drift_results_raw:
+                for metric_data in drift_results_raw['metrics']:
+                    metric_name = metric_data.get('metric', '')
                     
+                    # Handle ValueDrift metrics
+                    if 'ValueDrift' in metric_name:
+                        drift_data = metric_data.get('result', {})
+                        column_name = drift_data.get('column_name', '')
+                        
+                        if column_name in column_mapping.numerical_features:
+                            drift_score = drift_data.get('drift_score', 0.0)
+                            drift_detected = drift_data.get('drift_detected', False)
+                            
+                            drift_results[column_name] = {
+                                "drift_score": float(drift_score),
+                                "drift_detected": bool(drift_detected),
+                                "threshold": self.config.drift_threshold
+                            }
+            
+            # Fill in missing features with default values
+            for feature in column_mapping.numerical_features:
+                if feature not in drift_results:
                     drift_results[feature] = {
-                        "drift_score": float(drift_score),
-                        "drift_detected": bool(drift_detected),
+                        "drift_score": 0.0,
+                        "drift_detected": False,
                         "threshold": self.config.drift_threshold
                     }
-            except Exception as e:
-                logger.warning(f"Could not check drift for feature {feature}: {str(e)}")
+                    
+        except Exception as e:
+            logger.error(f"Failed to extract drift results: {str(e)}")
+            # Fallback: create empty results for all features
+            for feature in column_mapping.numerical_features:
                 drift_results[feature] = {
                     "drift_score": 0.0,
                     "drift_detected": False,
-                    "error": str(e)
+                    "error": f"Failed to extract drift results: {str(e)}"
                 }
         
         # Overall drift detection
@@ -259,6 +281,104 @@ class ModelMonitor:
         
         return prediction_results
     
+    def check_data_quality(self) -> Dict[str, Any]:
+        """Check comprehensive data quality using Evidently metrics"""
+        if self.current_data is None:
+            raise ValueError("Current data must be loaded first")
+        
+        logger.info("Checking data quality")
+        
+        # Create column mapping
+        column_mapping = ColumnMapping(
+            target='target' if 'target' in self.current_data.columns else None,
+            numerical_features=self.current_data.select_dtypes(include=[np.number]).columns.tolist(),
+            categorical_features=self.current_data.select_dtypes(include=['object']).columns.tolist()
+        )
+        
+        # Create comprehensive data quality report
+        quality_report = Report(metrics=[
+            RowCount(),
+            DatasetMissingValueCount(),
+            DuplicatedRowCount(),
+            EmptyRowsCount(),
+            DriftedColumnsCount(),
+            # Add statistical metrics for numerical features
+            *[MeanValue(column_name=col) for col in column_mapping.numerical_features[:3]],
+            *[StdValue(column_name=col) for col in column_mapping.numerical_features[:3]],
+            *[MinValue(column_name=col) for col in column_mapping.numerical_features[:3]],
+            *[MaxValue(column_name=col) for col in column_mapping.numerical_features[:3]]
+        ])
+        
+        # Run quality report
+        quality_report.run(
+            reference_data=self.current_data,
+            current_data=self.current_data,
+            column_mapping=column_mapping
+        )
+        
+        # Extract quality results
+        quality_results = {}
+        
+        try:
+            quality_data = quality_report.as_dict()
+            
+            if 'metrics' in quality_data:
+                for metric_data in quality_data['metrics']:
+                    metric_name = metric_data.get('metric', '')
+                    result = metric_data.get('result', {})
+                    
+                    if 'RowCount' in metric_name:
+                        quality_results['row_count'] = result.get('current', 0)
+                    elif 'DatasetMissingValueCount' in metric_name:
+                        quality_results['missing_values'] = result.get('current', 0)
+                    elif 'DuplicatedRowCount' in metric_name:
+                        quality_results['duplicated_rows'] = result.get('current', 0)
+                    elif 'EmptyRowsCount' in metric_name:
+                        quality_results['empty_rows'] = result.get('current', 0)
+                    elif 'DriftedColumnsCount' in metric_name:
+                        quality_results['drifted_columns'] = result.get('current', 0)
+                    elif 'MeanValue' in metric_name:
+                        column_name = result.get('column_name', '')
+                        if column_name:
+                            quality_results[f'{column_name}_mean'] = result.get('current', 0)
+                    elif 'StdValue' in metric_name:
+                        column_name = result.get('column_name', '')
+                        if column_name:
+                            quality_results[f'{column_name}_std'] = result.get('current', 0)
+                    elif 'MinValue' in metric_name:
+                        column_name = result.get('column_name', '')
+                        if column_name:
+                            quality_results[f'{column_name}_min'] = result.get('current', 0)
+                    elif 'MaxValue' in metric_name:
+                        column_name = result.get('column_name', '')
+                        if column_name:
+                            quality_results[f'{column_name}_max'] = result.get('current', 0)
+        
+        except Exception as e:
+            logger.error(f"Failed to extract quality results: {str(e)}")
+            quality_results = {"error": str(e)}
+        
+        # Calculate quality score
+        row_count = quality_results.get('row_count', 0)
+        missing_values = quality_results.get('missing_values', 0)
+        duplicated_rows = quality_results.get('duplicated_rows', 0)
+        empty_rows = quality_results.get('empty_rows', 0)
+        
+        if row_count > 0:
+            quality_score = 1.0 - (missing_values + duplicated_rows + empty_rows) / (row_count * 3)
+        else:
+            quality_score = 0.0
+        
+        quality_results.update({
+            "quality_score": max(0.0, min(1.0, quality_score)),
+            "timestamp": datetime.now().isoformat(),
+            "threshold": 0.8
+        })
+        
+        logger.info(f"Data quality check completed. Quality score: {quality_score:.4f}")
+        
+        return quality_results
+    
     def check_system_health(self) -> Dict[str, Any]:
         """Check overall system health"""
         logger.info("Checking system health")
@@ -296,11 +416,26 @@ class ModelMonitor:
                 "performance_acceptable": perf.get('performance_acceptable', False)
             }
         
-        # Determine overall status
-        all_checks_passed = all(
-            check.get("status", "healthy") == "healthy" 
-            for check in health_status["checks"].values()
-        )
+        # Determine overall status based on actual check results
+        all_checks_passed = True
+        
+        # Check data availability
+        data_availability = health_status["checks"].get("data_availability", {})
+        if not (data_availability.get("reference_data_loaded", False) and 
+                data_availability.get("current_data_loaded", False) and 
+                data_availability.get("model_loaded", False)):
+            all_checks_passed = False
+        
+        # Check data quality
+        data_quality = health_status["checks"].get("data_quality", {})
+        quality_score = data_quality.get("quality_score", 0)
+        if quality_score < 0.8:  # Threshold for acceptable data quality
+            all_checks_passed = False
+        
+        # Check model performance
+        model_performance = health_status["checks"].get("model_performance", {})
+        if model_performance and not model_performance.get("performance_acceptable", True):
+            all_checks_passed = False
         
         if not all_checks_passed:
             health_status["overall_status"] = "unhealthy"
