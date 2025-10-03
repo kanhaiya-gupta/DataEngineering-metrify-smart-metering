@@ -168,7 +168,9 @@ cython_debug/
 !LICENSE.txt
 
 # Large data directories
-data/
+!data/raw/grid_operators/grid_status.csv
+!data/raw/smart_meters/smart_meter_readings.csv
+!data/raw/weather_stations/weather_observations.csv
 datasets/
 raw_data/
 processed_data/
