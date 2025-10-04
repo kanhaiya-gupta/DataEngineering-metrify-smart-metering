@@ -26,16 +26,31 @@ graph TB
         API[FastAPI Services<br/>🚀 REST API]
         WORKERS[Background Workers<br/>🔄 Processing]
         DBT[dbt Transformations<br/>📊 Modeling]
-        ML[ML/AI Engine<br/>🤖 TensorFlow]
-        ANALYTICS[Advanced Analytics<br/>📈 Forecasting]
+        FLINK[Apache Flink<br/>⚡ Stream Processing]
     end
 
-    %% Storage Layer
-    subgraph "💾 Data Storage"
+    %% Data Engineering Storage Layer
+    subgraph "🗄️ Data Engineering Storage"
         POSTGRES[(PostgreSQL<br/>🗄️ Operational)]
         SNOWFLAKE[(Snowflake<br/>❄️ Warehouse)]
         S3[(Multi-Cloud<br/>☁️ AWS/Azure/GCP)]
         CACHE[(Redis Cache<br/>⚡ Caching)]
+    end
+
+    %% Data Consumption Layer
+    subgraph "🎯 Data Consumption"
+        ML[ML/AI Engine<br/>🤖 TensorFlow]
+        ANALYTICS[Advanced Analytics<br/>📈 Forecasting]
+        BI[Business Intelligence<br/>📊 Dashboards]
+        REPORTS[Reporting Systems<br/>📋 Reports]
+    end
+
+    %% ML/Analytics Storage Layer
+    subgraph "📈 ML/Analytics Storage"
+        FEATURES[(Feature Store<br/>🔧 Features)]
+        MODELS[(Model Registry<br/>🤖 Models)]
+        RESULTS[(Results DB<br/>📊 Predictions)]
+        VECTOR[(Vector DB<br/>🔍 Embeddings)]
     end
 
     %% Monitoring & Observability
@@ -66,34 +81,51 @@ graph TB
     KAFKA --> WORKERS
     KAFKA --> FLINK
     AIRFLOW --> WORKERS
+    AIRFLOW --> DBT
     
     API --> POSTGRES
     WORKERS --> POSTGRES
     WORKERS --> S3
     WORKERS --> CACHE
     
-    %% Data Warehouse Flow (Proper Data Engineering)
+    %% Data Engineering Storage Flow
     S3 --> DBT
     DBT --> SNOWFLAKE
     FLINK --> S3
     FLINK --> POSTGRES
     
-    %% ML and Analytics consume from Data Warehouse
+    %% Data Consumption Layer (consumes from Data Engineering Storage)
     SNOWFLAKE --> ML
     SNOWFLAKE --> ANALYTICS
-    ML --> SNOWFLAKE
-    ANALYTICS --> SNOWFLAKE
+    SNOWFLAKE --> BI
+    SNOWFLAKE --> REPORTS
+    
+    %% ML/Analytics Storage Flow (stores results from Data Consumption)
+    ML --> FEATURES
+    ML --> MODELS
+    ML --> RESULTS
+    ANALYTICS --> RESULTS
+    BI --> RESULTS
+    REPORTS --> RESULTS
+    ML --> VECTOR
+    ANALYTICS --> VECTOR
     
     %% Monitoring connections
     API --> DATADOG
     WORKERS --> DATADOG
     ML --> DATADOG
     ANALYTICS --> DATADOG
+    BI --> DATADOG
+    REPORTS --> DATADOG
     KAFKA --> PROMETHEUS
     FLINK --> PROMETHEUS
     POSTGRES --> GRAFANA
     SNOWFLAKE --> GRAFANA
     CACHE --> GRAFANA
+    FEATURES --> GRAFANA
+    MODELS --> GRAFANA
+    RESULTS --> GRAFANA
+    VECTOR --> GRAFANA
     QUALITY --> GRAFANA
     GOVERNANCE --> GRAFANA
     
@@ -102,6 +134,12 @@ graph TB
     WORKERS --> DOCKER
     ML --> DOCKER
     ANALYTICS --> DOCKER
+    BI --> DOCKER
+    REPORTS --> DOCKER
+    FEATURES --> DOCKER
+    MODELS --> DOCKER
+    RESULTS --> DOCKER
+    VECTOR --> DOCKER
     DOCKER --> K8S
     K8S --> TERRAFORM
     FLINK --> K8S
@@ -110,13 +148,17 @@ graph TB
     %% Styling
     classDef dataSource fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef processing fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef storage fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef consumption fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef dataEngineeringStorage fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef mlAnalyticsStorage fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef monitoring fill:#fff3e0,stroke:#e65100,stroke-width:2px
     classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px
 
     class SM,GO,WS,SOLAR dataSource
-    class KAFKA,AIRFLOW,API,WORKERS,DBT,ML,ANALYTICS,FLINK processing
-    class POSTGRES,SNOWFLAKE,S3,CACHE storage
+    class KAFKA,AIRFLOW,API,WORKERS,DBT,FLINK processing
+    class ML,ANALYTICS,BI,REPORTS consumption
+    class POSTGRES,SNOWFLAKE,S3,CACHE dataEngineeringStorage
+    class FEATURES,MODELS,RESULTS,VECTOR mlAnalyticsStorage
     class DATADOG,PROMETHEUS,GRAFANA,JAEGER,QUALITY,GOVERNANCE monitoring
     class DOCKER,K8S,TERRAFORM,PERFORMANCE infrastructure
 ```
@@ -147,16 +189,31 @@ graph TB
         API[FastAPI Services<br/>🚀 REST API]
         WORKERS[Background Workers<br/>🔄 Processing]
         DBT[dbt Transformations<br/>📊 Modeling]
-        ML[ML/AI Engine<br/>🤖 TensorFlow]
-        ANALYTICS[Advanced Analytics<br/>📈 Forecasting]
+        FLINK[Apache Flink<br/>⚡ Stream Processing]
     end
 
-    %% Storage Layer
-    subgraph "💾 Data Storage"
+    %% Data Engineering Storage Layer
+    subgraph "🗄️ Data Engineering Storage"
         POSTGRES[(PostgreSQL<br/>🗄️ Operational)]
         SNOWFLAKE[(Snowflake<br/>❄️ Warehouse)]
         S3[(Multi-Cloud<br/>☁️ AWS/Azure/GCP)]
         CACHE[(Redis Cache<br/>⚡ Caching)]
+    end
+
+    %% Data Consumption Layer
+    subgraph "🎯 Data Consumption"
+        ML[ML/AI Engine<br/>🤖 TensorFlow]
+        ANALYTICS[Advanced Analytics<br/>📈 Forecasting]
+        BI[Business Intelligence<br/>📊 Dashboards]
+        REPORTS[Reporting Systems<br/>📋 Reports]
+    end
+
+    %% ML/Analytics Storage Layer
+    subgraph "📈 ML/Analytics Storage"
+        FEATURES[(Feature Store<br/>🔧 Features)]
+        MODELS[(Model Registry<br/>🤖 Models)]
+        RESULTS[(Results DB<br/>📊 Predictions)]
+        VECTOR[(Vector DB<br/>🔍 Embeddings)]
     end
 
     %% Monitoring & Observability
@@ -187,34 +244,51 @@ graph TB
     KAFKA --> WORKERS
     KAFKA --> FLINK
     AIRFLOW --> WORKERS
+    AIRFLOW --> DBT
     
     API --> POSTGRES
     WORKERS --> POSTGRES
     WORKERS --> S3
     WORKERS --> CACHE
     
-    %% Data Warehouse Flow (Proper Data Engineering)
+    %% Data Engineering Storage Flow
     S3 --> DBT
     DBT --> SNOWFLAKE
     FLINK --> S3
     FLINK --> POSTGRES
     
-    %% ML and Analytics consume from Data Warehouse
+    %% Data Consumption Layer (consumes from Data Engineering Storage)
     SNOWFLAKE --> ML
     SNOWFLAKE --> ANALYTICS
-    ML --> SNOWFLAKE
-    ANALYTICS --> SNOWFLAKE
+    SNOWFLAKE --> BI
+    SNOWFLAKE --> REPORTS
+    
+    %% ML/Analytics Storage Flow (stores results from Data Consumption)
+    ML --> FEATURES
+    ML --> MODELS
+    ML --> RESULTS
+    ANALYTICS --> RESULTS
+    BI --> RESULTS
+    REPORTS --> RESULTS
+    ML --> VECTOR
+    ANALYTICS --> VECTOR
     
     %% Monitoring connections
     API --> DATADOG
     WORKERS --> DATADOG
     ML --> DATADOG
     ANALYTICS --> DATADOG
+    BI --> DATADOG
+    REPORTS --> DATADOG
     KAFKA --> PROMETHEUS
     FLINK --> PROMETHEUS
     POSTGRES --> GRAFANA
     SNOWFLAKE --> GRAFANA
     CACHE --> GRAFANA
+    FEATURES --> GRAFANA
+    MODELS --> GRAFANA
+    RESULTS --> GRAFANA
+    VECTOR --> GRAFANA
     QUALITY --> GRAFANA
     GOVERNANCE --> GRAFANA
     
@@ -223,6 +297,12 @@ graph TB
     WORKERS --> DOCKER
     ML --> DOCKER
     ANALYTICS --> DOCKER
+    BI --> DOCKER
+    REPORTS --> DOCKER
+    FEATURES --> DOCKER
+    MODELS --> DOCKER
+    RESULTS --> DOCKER
+    VECTOR --> DOCKER
     DOCKER --> K8S
     K8S --> TERRAFORM
     FLINK --> K8S
@@ -231,13 +311,17 @@ graph TB
     %% Styling
     classDef dataSource fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     classDef processing fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef storage fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef consumption fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef dataEngineeringStorage fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef mlAnalyticsStorage fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
     classDef monitoring fill:#fff3e0,stroke:#e65100,stroke-width:2px
     classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px
 
     class SM,GO,WS,SOLAR dataSource
-    class KAFKA,AIRFLOW,API,WORKERS,DBT,ML,ANALYTICS,FLINK processing
-    class POSTGRES,SNOWFLAKE,S3,CACHE storage
+    class KAFKA,AIRFLOW,API,WORKERS,DBT,FLINK processing
+    class ML,ANALYTICS,BI,REPORTS consumption
+    class POSTGRES,SNOWFLAKE,S3,CACHE dataEngineeringStorage
+    class FEATURES,MODELS,RESULTS,VECTOR mlAnalyticsStorage
     class DATADOG,PROMETHEUS,GRAFANA,JAEGER,QUALITY,GOVERNANCE monitoring
     class DOCKER,K8S,TERRAFORM,PERFORMANCE infrastructure
 ```
