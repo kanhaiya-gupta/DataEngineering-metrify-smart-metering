@@ -4,11 +4,10 @@
 with station_data as (
     select
         station_id,
-        station_latitude as latitude,
-        station_longitude as longitude,
+        station_location_lat as latitude,
+        station_location_lon as longitude,
         station_elevation_m as elevation_m,
-        station_address,
-        weather_station_type,
+        station_name,
         observation_type,
         observation_source,
         source_system,
@@ -20,7 +19,7 @@ with station_data as (
         max(temperature_celsius) as max_temperature_celsius,
         avg(humidity_percent) as avg_humidity_percent,
         avg(pressure_hpa) as avg_pressure_hpa,
-        avg(wind_speed_mps) as avg_wind_speed_mps,
+        avg(wind_speed_ms) as avg_wind_speed_ms,
         avg(wind_direction_degrees) as avg_wind_direction_degrees,
         sum(precipitation_mm) as total_precipitation_mm,
         avg(visibility_km) as avg_visibility_km,
@@ -32,11 +31,10 @@ with station_data as (
     from {{ ref('stg_weather_data') }}
     group by 
         station_id, 
-        station_latitude, 
-        station_longitude, 
+        station_location_lat, 
+        station_location_lon, 
         station_elevation_m, 
-        station_address, 
-        weather_station_type, 
+        station_name, 
         observation_type, 
         observation_source, 
         source_system
@@ -87,11 +85,11 @@ enriched_stations as (
         
         -- Wind classification
         case 
-            when avg_wind_speed_mps is null then 'UNKNOWN'
-            when avg_wind_speed_mps < 1 then 'CALM'
-            when avg_wind_speed_mps < 5 then 'LIGHT'
-            when avg_wind_speed_mps < 10 then 'MODERATE'
-            when avg_wind_speed_mps < 20 then 'STRONG'
+            when avg_wind_speed_ms is null then 'UNKNOWN'
+            when avg_wind_speed_ms < 1 then 'CALM'
+            when avg_wind_speed_ms < 5 then 'LIGHT'
+            when avg_wind_speed_ms < 10 then 'MODERATE'
+            when avg_wind_speed_ms < 20 then 'STRONG'
             else 'VERY_STRONG'
         end as wind_classification,
         
@@ -143,11 +141,9 @@ final_stations as (
         split_part(station_id, '-', 2) as station_region,
         split_part(station_id, '-', 3) as station_sequence,
         
-        -- Address components
-        split_part(station_address, ',', 1) as street_address,
-        split_part(station_address, ',', 2) as city,
-        split_part(station_address, ',', 3) as state,
-        split_part(station_address, ',', 4) as postal_code,
+        -- Station name components
+        split_part(station_name, ' ', 1) as station_type,
+        split_part(station_name, ' ', 2) as station_location,
         
         -- Elevation classification
         case 
@@ -160,9 +156,9 @@ final_stations as (
         
         -- Data completeness
         case 
-            when latitude is not null and longitude is not null and station_address is not null 
+            when latitude is not null and longitude is not null and station_name is not null 
                  and elevation_m is not null then 'COMPLETE'
-            when latitude is not null and longitude is not null and station_address is not null then 'PARTIAL'
+            when latitude is not null and longitude is not null and station_name is not null then 'PARTIAL'
             else 'INCOMPLETE'
         end as data_completeness,
         

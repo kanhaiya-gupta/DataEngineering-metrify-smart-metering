@@ -83,6 +83,9 @@ google-cloud-pubsub>=2.19.0
 apache-airflow
 apache-airflow-providers-postgres
 apache-airflow-providers-amazon
+apache-airflow-providers-snowflake
+apache-airflow-providers-apache-kafka
+apache-airflow-providers-common-sql
 #apache-airflow-providers-azure
 apache-airflow-providers-google
 

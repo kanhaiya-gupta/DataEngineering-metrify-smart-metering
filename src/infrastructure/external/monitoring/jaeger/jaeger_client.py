@@ -15,7 +15,7 @@ try:
     from opentracing import tags, logs
     from opentracing.ext import tags as ext_tags
     from opentracing.propagation import Format
-    from opentracing.scope_scope_manager import ScopeManager
+    from opentracing.scope_managers import ScopeManager
     from opentracing.scope import Scope
 except ImportError:
     Config = None

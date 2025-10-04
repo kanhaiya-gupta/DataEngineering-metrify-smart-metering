@@ -22,7 +22,8 @@ from src.application.dto.weather_dto import (
     WeatherForecastDTO
 )
 from src.application.use_cases.analyze_weather_impact import AnalyzeWeatherImpactUseCase
-from src.core.config.config_loader import get_database_config, get_kafka_config, get_s3_config
+from src.infrastructure.database.config import get_database_config
+from src.core.config.config_loader import get_kafka_config, get_s3_config
 from src.infrastructure.database.repositories.weather_station_repository import WeatherStationRepository
 from src.infrastructure.external.apis.data_quality_service import DataQualityService
 from src.infrastructure.external.apis.anomaly_detection_service import AnomalyDetectionService
@@ -40,7 +41,8 @@ router = APIRouter()
 def get_weather_station_repository():
     """Get weather station repository instance"""
     db_config = get_database_config()
-    return WeatherStationRepository(db_config)
+    session = db_config.session_factory()
+    return WeatherStationRepository(session)
 
 def get_data_quality_service():
     """Get data quality service instance"""

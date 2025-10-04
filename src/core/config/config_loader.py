@@ -4,6 +4,7 @@ Handles loading and validation of environment configuration
 """
 
 import os
+import yaml
 from typing import Dict, Any, Optional
 from pathlib import Path
 import logging
@@ -142,6 +143,28 @@ class SecurityConfig:
 
 
 @dataclass
+class DataSourceConfig:
+    """Data source configuration"""
+    data_root: str
+    readings_file: str
+    meters_file: str
+    file_patterns: Dict[str, str]
+    batch_size: int
+    processing_interval: int
+    kafka_topic: str
+    csv_settings: Dict[str, Any]
+    validation: Dict[str, Any]
+
+@dataclass
+class DataSourcesConfig:
+    """All data sources configuration"""
+    smart_meters: DataSourceConfig
+    grid_operators: DataSourceConfig
+    weather_stations: DataSourceConfig
+    processing: Dict[str, Any]
+    environments: Dict[str, Any]
+
+@dataclass
 class AppConfig:
     """Application configuration"""
     name: str
@@ -163,6 +186,15 @@ class AppConfig:
     cpu_limit: int
     cpu_warning_threshold: str
     cpu_critical_threshold: str
+    database_url: str
+    grafana_url: str
+    grafana_username: str
+    grafana_password: str
+    jaeger_agent_host: str
+    jaeger_agent_port: int
+    datadog_api_key: str
+    datadog_app_key: str
+    datadog_site: str
 
 
 class ConfigLoader:
@@ -174,7 +206,9 @@ class ConfigLoader:
     
     def __init__(self, env_file: Optional[str] = None):
         self.env_file = env_file
+        self.yaml_config = {}
         self._load_env_file()
+        self._load_yaml_config()
     
     def _load_env_file(self) -> None:
         """Load environment variables from file"""
@@ -186,6 +220,29 @@ class ConfigLoader:
                         key, value = line.split('=', 1)
                         os.environ[key] = value
             logger.info(f"Loaded environment from {self.env_file}")
+    
+    def _load_yaml_config(self) -> None:
+        """Load YAML configuration files"""
+        try:
+            # Load data sources configuration
+            data_sources_path = Path("config/external_services/data_sources.yaml")
+            if data_sources_path.exists():
+                with open(data_sources_path, 'r') as f:
+                    self.yaml_config['data_sources'] = yaml.safe_load(f)
+                logger.info(f"Loaded data sources config from {data_sources_path}")
+            else:
+                logger.warning(f"Data sources config not found at {data_sources_path}")
+            
+            # Load performance configuration
+            performance_path = Path("config/external_services/performance.yaml")
+            if performance_path.exists():
+                with open(performance_path, 'r') as f:
+                    self.yaml_config['performance'] = yaml.safe_load(f)
+                logger.info(f"Loaded performance config from {performance_path}")
+            else:
+                logger.warning(f"Performance config not found at {performance_path}")
+        except Exception as e:
+            logger.error(f"Error loading YAML config: {e}")
     
     def get_database_config(self) -> DatabaseConfig:
         """Get database configuration"""
@@ -257,6 +314,93 @@ class ConfigLoader:
             client_session_keep_alive=os.getenv('SNOWFLAKE_CLIENT_SESSION_KEEP_ALIVE', 'true').lower() == 'true'
         )
     
+    def get_data_sources_config(self) -> DataSourcesConfig:
+        """Get data sources configuration"""
+        # Load from YAML config if available
+        if hasattr(self, 'yaml_config') and 'data_sources' in self.yaml_config:
+            data_sources = self.yaml_config['data_sources']
+            
+            return DataSourcesConfig(
+                smart_meters=DataSourceConfig(
+                    data_root=data_sources['smart_meters'].get('data_root', 'data/raw'),
+                    readings_file=data_sources['smart_meters'].get('readings_file', 'smart_meters/smart_meter_readings.csv'),
+                    meters_file=data_sources['smart_meters'].get('meters_file', 'smart_meters/smart_meters.csv'),
+                    file_patterns=data_sources['smart_meters'].get('file_patterns', {}),
+                    batch_size=data_sources['smart_meters'].get('batch_size', 1000),
+                    processing_interval=data_sources['smart_meters'].get('processing_interval', 60),
+                    kafka_topic=data_sources['smart_meters'].get('kafka_topic', 'smart_meter_data'),
+                    csv_settings=data_sources['smart_meters'].get('csv_settings', {}),
+                    validation=data_sources['smart_meters'].get('validation', {})
+                ),
+                grid_operators=DataSourceConfig(
+                    data_root=data_sources['grid_operators'].get('data_root', 'data/raw'),
+                    readings_file=data_sources['grid_operators'].get('status_file', 'grid_operators/grid_status.csv'),
+                    meters_file=data_sources['grid_operators'].get('operators_file', 'grid_operators/grid_operators.csv'),
+                    file_patterns=data_sources['grid_operators'].get('file_patterns', {}),
+                    batch_size=data_sources['grid_operators'].get('batch_size', 100),
+                    processing_interval=data_sources['grid_operators'].get('processing_interval', 60),
+                    kafka_topic=data_sources['grid_operators'].get('kafka_topic', 'grid_operator_data'),
+                    csv_settings=data_sources['grid_operators'].get('csv_settings', {}),
+                    validation=data_sources['grid_operators'].get('validation', {})
+                ),
+                weather_stations=DataSourceConfig(
+                    data_root=data_sources['weather_stations'].get('data_root', 'data/raw'),
+                    readings_file=data_sources['weather_stations'].get('observations_file', 'weather_stations/weather_observations.csv'),
+                    meters_file=data_sources['weather_stations'].get('stations_file', 'weather_stations/weather_stations.csv'),
+                    file_patterns=data_sources['weather_stations'].get('file_patterns', {}),
+                    batch_size=data_sources['weather_stations'].get('batch_size', 100),
+                    processing_interval=data_sources['weather_stations'].get('processing_interval', 300),
+                    kafka_topic=data_sources['weather_stations'].get('kafka_topic', 'weather_data'),
+                    csv_settings=data_sources['weather_stations'].get('csv_settings', {}),
+                    validation=data_sources['weather_stations'].get('validation', {})
+                ),
+                processing=data_sources.get('processing', {}),
+                environments=data_sources.get('environments', {})
+            )
+        
+        # Fallback to default configuration
+        return DataSourcesConfig(
+            smart_meters=DataSourceConfig(
+                data_root='data/raw',
+                readings_file='smart_meters/smart_meter_readings.csv',
+                meters_file='smart_meters/smart_meters.csv',
+                file_patterns={},
+                batch_size=1000,
+                processing_interval=60,
+                kafka_topic='smart-meter-data',
+                csv_settings={},
+                validation={}
+            ),
+            grid_operators=DataSourceConfig(
+                data_root='data/raw',
+                readings_file='grid_operators/grid_status.csv',
+                meters_file='grid_operators/grid_operators.csv',
+                file_patterns={},
+                batch_size=100,
+                processing_interval=60,
+                kafka_topic='grid-operator-data',
+                csv_settings={},
+                validation={}
+            ),
+            weather_stations=DataSourceConfig(
+                data_root='data/raw',
+                readings_file='weather_stations/weather_observations.csv',
+                meters_file='weather_stations/weather_stations.csv',
+                file_patterns={},
+                batch_size=100,
+                processing_interval=300,
+                kafka_topic='weather-data',
+                csv_settings={},
+                validation={}
+            ),
+            processing={},
+            environments={}
+        )
+    
+    def get_performance_config(self) -> Dict[str, Any]:
+        """Get performance configuration"""
+        return self.yaml_config.get('performance', {})
+
     def get_airflow_config(self) -> AirflowConfig:
         """Get Airflow configuration"""
         return AirflowConfig(
@@ -337,7 +481,16 @@ class ConfigLoader:
             memory_critical_threshold=os.getenv('MEMORY_CRITICAL_THRESHOLD', '90%'),
             cpu_limit=int(os.getenv('CPU_LIMIT', '2')),
             cpu_warning_threshold=os.getenv('CPU_WARNING_THRESHOLD', '80%'),
-            cpu_critical_threshold=os.getenv('CPU_CRITICAL_THRESHOLD', '90%')
+            cpu_critical_threshold=os.getenv('CPU_CRITICAL_THRESHOLD', '90%'),
+            database_url=os.getenv('DATABASE_URL', 'postgresql://user:password@localhost:5432/metrify'),
+            grafana_url=os.getenv('GRAFANA_URL', 'http://localhost:3000'),
+            grafana_username=os.getenv('GRAFANA_USERNAME', 'admin'),
+            grafana_password=os.getenv('GRAFANA_PASSWORD', 'admin'),
+            jaeger_agent_host=os.getenv('JAEGER_AGENT_HOST', 'localhost'),
+            jaeger_agent_port=int(os.getenv('JAEGER_AGENT_PORT', '6831')),
+            datadog_api_key=os.getenv('DATADOG_API_KEY', ''),
+            datadog_app_key=os.getenv('DATADOG_APP_KEY', ''),
+            datadog_site=os.getenv('DATADOG_SITE', 'datadoghq.com')
         )
     
     def get_all_configs(self) -> Dict[str, Any]:

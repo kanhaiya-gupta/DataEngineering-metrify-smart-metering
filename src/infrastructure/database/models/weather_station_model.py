@@ -5,15 +5,13 @@ SQLAlchemy model for weather station data persistence
 
 from datetime import datetime
 from typing import Optional, Dict, Any
-from sqlalchemy import Column, String, Float, Integer, DateTime, Text, JSON, Boolean, Enum as SQLEnum
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, String, Float, Integer, DateTime, Text, JSON, Boolean, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
 from ....core.domain.enums.weather_station_status import WeatherStationStatus
-
-Base = declarative_base()
+from ..base import Base
 
 
 class WeatherStationModel(Base):
@@ -97,7 +95,7 @@ class WeatherObservationModel(Base):
     
     # Primary key
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    station_id = Column(String(255), nullable=False, index=True)
+    station_id = Column(String(255), ForeignKey("weather_stations.station_id"), nullable=False, index=True)
     
     # Observation data
     timestamp = Column(DateTime, nullable=False, index=True)
@@ -158,7 +156,7 @@ class WeatherEventModel(Base):
     
     # Primary key
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    station_id = Column(String(255), nullable=False, index=True)
+    station_id = Column(String(255), ForeignKey("weather_stations.station_id"), nullable=False, index=True)
     
     # Event data
     event_type = Column(String(100), nullable=False, index=True)

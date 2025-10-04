@@ -30,6 +30,7 @@ COPY requirements_streaming.txt .
 COPY requirements_dbt.txt .
 COPY requirements_quality.txt .
 COPY requirements_monitoring.txt .
+COPY requirements_airflow_client.txt .
 
 # Install Python dependencies in stages to avoid conflicts
 RUN pip install --no-cache-dir -r requirements_core.txt && \
@@ -37,6 +38,7 @@ RUN pip install --no-cache-dir -r requirements_core.txt && \
     pip install --no-cache-dir -r requirements_cloud.txt && \
     pip install --no-cache-dir -r requirements_quality.txt && \
     pip install --no-cache-dir -r requirements_monitoring.txt && \
+    pip install --no-cache-dir -r requirements_airflow_client.txt && \
     pip install --no-cache-dir -r requirements_ml.txt && \
     pip install --no-cache-dir -r requirements_dbt.txt
 

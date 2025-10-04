@@ -330,3 +330,84 @@ class SmartMeterRepository(ISmartMeterRepository):
         
         # Clear uncommitted events
         meter.clear_uncommitted_events()
+    
+    async def get_by_manufacturer(self, manufacturer: str) -> List[SmartMeter]:
+        """Get smart meters by manufacturer"""
+        try:
+            models = self.session.query(SmartMeterModel).filter(
+                SmartMeterModel.manufacturer == manufacturer
+            ).all()
+            return [self._model_to_entity(model) for model in models]
+        except Exception as e:
+            raise DataQualityError(f"Failed to get meters by manufacturer: {str(e)}")
+    
+    async def get_with_anomalies(self, since: Optional[datetime] = None) -> List[SmartMeter]:
+        """Get smart meters with anomalies since given date"""
+        try:
+            query = self.session.query(SmartMeterModel).join(MeterReadingModel).filter(
+                MeterReadingModel.anomaly_detected == True
+            )
+            if since:
+                query = query.filter(MeterReadingModel.timestamp >= since)
+            models = query.distinct().all()
+            return [self._model_to_entity(model) for model in models]
+        except Exception as e:
+            raise DataQualityError(f"Failed to get meters with anomalies: {str(e)}")
+    
+    async def get_by_performance_score_range(self, min_score: float, max_score: float) -> List[SmartMeter]:
+        """Get smart meters by performance score range"""
+        try:
+            models = self.session.query(SmartMeterModel).filter(
+                and_(
+                    SmartMeterModel.performance_score >= min_score,
+                    SmartMeterModel.performance_score <= max_score
+                )
+            ).all()
+            return [self._model_to_entity(model) for model in models]
+        except Exception as e:
+            raise DataQualityError(f"Failed to get meters by performance score: {str(e)}")
+    
+    async def count_by_quality_tier(self, quality_tier: QualityTier) -> int:
+        """Count smart meters by quality tier"""
+        try:
+            count = self.db_session.query(SmartMeterModel).filter(
+                SmartMeterModel.quality_tier == quality_tier.value
+            ).count()
+            return count
+        except Exception as e:
+            raise DataQualityError(f"Failed to count meters by quality tier: {str(e)}")
+    
+    async def get_meters_with_filters(self, filters: dict) -> tuple[List[SmartMeter], int]:
+        """Get smart meters with filters and return (meters, total_count)"""
+        try:
+            query = self.db_session.query(SmartMeterModel)
+            
+            # Apply filters
+            if filters.get('status'):
+                query = query.filter(SmartMeterModel.status == filters['status'])
+            if filters.get('quality_tier'):
+                query = query.filter(SmartMeterModel.quality_tier == filters['quality_tier'])
+            if filters.get('manufacturer'):
+                query = query.filter(SmartMeterModel.manufacturer == filters['manufacturer'])
+            
+            # Get total count before pagination
+            total_count = query.count()
+            
+            # Apply pagination
+            if filters.get('offset'):
+                query = query.offset(filters['offset'])
+            if filters.get('limit'):
+                query = query.limit(filters['limit'])
+            
+            models = query.all()
+            meters = [self._model_to_entity(model) for model in models]
+            return meters, total_count
+        except Exception as e:
+            raise DataQualityError(f"Failed to get meters with filters: {str(e)}")
+    
+    async def get_total_count(self) -> int:
+        """Get total count of smart meters"""
+        try:
+            return self.db_session.query(SmartMeterModel).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get total count: {str(e)}")

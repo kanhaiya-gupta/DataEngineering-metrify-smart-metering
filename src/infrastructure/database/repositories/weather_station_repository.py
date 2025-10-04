@@ -321,3 +321,31 @@ class WeatherStationRepository(IWeatherStationRepository):
         
         # Clear uncommitted events
         station.clear_uncommitted_events()
+    
+    async def get_stations_with_filters(self, filters: dict) -> tuple[List[WeatherStation], int]:
+        """Get weather stations with filters and return (stations, total_count)"""
+        try:
+            query = self.db_session.query(WeatherStationModel)
+            
+            # Apply filters
+            if filters.get('status'):
+                query = query.filter(WeatherStationModel.status == filters['status'])
+            if filters.get('operator'):
+                query = query.filter(WeatherStationModel.operator == filters['operator'])
+            if filters.get('station_type'):
+                query = query.filter(WeatherStationModel.station_type == filters['station_type'])
+            
+            # Get total count before pagination
+            total_count = query.count()
+            
+            # Apply pagination
+            if filters.get('offset'):
+                query = query.offset(filters['offset'])
+            if filters.get('limit'):
+                query = query.limit(filters['limit'])
+            
+            models = query.all()
+            stations = [self._model_to_entity(model) for model in models]
+            return stations, total_count
+        except Exception as e:
+            raise DataQualityError(f"Failed to get stations with filters: {str(e)}")

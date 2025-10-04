@@ -43,7 +43,7 @@ class BatchPredictionRequest(BaseModel):
 class ServerConfig:
     """Configuration for model server"""
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 2500
     model_path: str = None
     model_name: str = "smart_meter_model"
     version: str = "1.0.0"

@@ -326,3 +326,120 @@ class GridOperatorRepository(IGridOperatorRepository):
         
         # Clear uncommitted events
         operator.clear_uncommitted_events()
+    
+    async def get_average_data_quality(self) -> float:
+        """Get average data quality across all grid operators"""
+        try:
+            result = self.db_session.query(GridOperatorModel.data_quality_score).all()
+            if not result:
+                return 0.0
+            scores = [row[0] for row in result if row[0] is not None]
+            return sum(scores) / len(scores) if scores else 0.0
+        except Exception as e:
+            raise DataQualityError(f"Failed to get average data quality: {str(e)}")
+    
+    async def get_average_uptime(self) -> float:
+        """Get average uptime across all grid operators"""
+        try:
+            result = self.db_session.query(GridOperatorModel.uptime_percentage).all()
+            if not result:
+                return 0.0
+            uptimes = [row[0] for row in result if row[0] is not None]
+            return sum(uptimes) / len(uptimes) if uptimes else 0.0
+        except Exception as e:
+            raise DataQualityError(f"Failed to get average uptime: {str(e)}")
+    
+    async def get_by_data_quality_threshold(self, threshold: float) -> List[GridOperator]:
+        """Get grid operators by data quality threshold"""
+        try:
+            models = self.db_session.query(GridOperatorModel).filter(
+                GridOperatorModel.data_quality_score >= threshold
+            ).all()
+            return [self._model_to_entity(model) for model in models]
+        except Exception as e:
+            raise DataQualityError(f"Failed to get operators by data quality threshold: {str(e)}")
+    
+    async def get_by_region(self, region: str) -> List[GridOperator]:
+        """Get grid operators by region"""
+        try:
+            models = self.db_session.query(GridOperatorModel).filter(
+                GridOperatorModel.region == region
+            ).all()
+            return [self._model_to_entity(model) for model in models]
+        except Exception as e:
+            raise DataQualityError(f"Failed to get operators by region: {str(e)}")
+    
+    async def get_by_uptime_threshold(self, threshold: float) -> List[GridOperator]:
+        """Get grid operators by uptime threshold"""
+        try:
+            models = self.db_session.query(GridOperatorModel).filter(
+                GridOperatorModel.uptime_percentage >= threshold
+            ).all()
+            return [self._model_to_entity(model) for model in models]
+        except Exception as e:
+            raise DataQualityError(f"Failed to get operators by uptime threshold: {str(e)}")
+    
+    async def get_operational(self) -> List[GridOperator]:
+        """Get operational grid operators"""
+        try:
+            models = self.db_session.query(GridOperatorModel).filter(
+                GridOperatorModel.status == GridOperatorStatus.ACTIVE.value
+            ).all()
+            return [self._model_to_entity(model) for model in models]
+        except Exception as e:
+            raise DataQualityError(f"Failed to get operational operators: {str(e)}")
+    
+    async def get_requiring_attention(self) -> List[GridOperator]:
+        """Get grid operators requiring attention"""
+        try:
+            models = self.db_session.query(GridOperatorModel).filter(
+                or_(
+                    GridOperatorModel.data_quality_score < 0.8,
+                    GridOperatorModel.uptime_percentage < 0.95,
+                    GridOperatorModel.status == GridOperatorStatus.MAINTENANCE.value
+                )
+            ).all()
+            return [self._model_to_entity(model) for model in models]
+        except Exception as e:
+            raise DataQualityError(f"Failed to get operators requiring attention: {str(e)}")
+    
+    async def get_with_recent_updates(self, since: Optional[datetime] = None) -> List[GridOperator]:
+        """Get grid operators with recent updates"""
+        try:
+            if since is None:
+                since = datetime.utcnow() - timedelta(hours=24)
+            
+            models = self.db_session.query(GridOperatorModel).filter(
+                GridOperatorModel.updated_at >= since
+            ).all()
+            return [self._model_to_entity(model) for model in models]
+        except Exception as e:
+            raise DataQualityError(f"Failed to get operators with recent updates: {str(e)}")
+    
+    async def get_operators_with_filters(self, filters: dict) -> tuple[List[GridOperator], int]:
+        """Get grid operators with filters and return (operators, total_count)"""
+        try:
+            query = self.db_session.query(GridOperatorModel)
+            
+            # Apply filters
+            if filters.get('status'):
+                query = query.filter(GridOperatorModel.status == filters['status'])
+            if filters.get('operator_type'):
+                query = query.filter(GridOperatorModel.operator_type == filters['operator_type'])
+            if filters.get('region'):
+                query = query.filter(GridOperatorModel.region == filters['region'])
+            
+            # Get total count before pagination
+            total_count = query.count()
+            
+            # Apply pagination
+            if filters.get('offset'):
+                query = query.offset(filters['offset'])
+            if filters.get('limit'):
+                query = query.limit(filters['limit'])
+            
+            models = query.all()
+            operators = [self._model_to_entity(model) for model in models]
+            return operators, total_count
+        except Exception as e:
+            raise DataQualityError(f"Failed to get operators with filters: {str(e)}")

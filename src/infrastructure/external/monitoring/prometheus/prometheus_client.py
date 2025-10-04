@@ -68,12 +68,13 @@ class PrometheusClient:
         self.registry = CollectorRegistry()
         self._metrics: Dict[str, Any] = {}
         self._http_server_started = False
-        
-        # Initialize core metrics
-        self._initialize_core_metrics()
+        self._metrics_initialized = False
     
     def _initialize_core_metrics(self) -> None:
         """Initialize core system metrics"""
+        if self._metrics_initialized:
+            return
+            
         try:
             # System metrics
             self._metrics["system_info"] = Info(
@@ -331,11 +332,17 @@ class PrometheusClient:
                 registry=self.registry
             )
             
+            self._metrics_initialized = True
             logger.info("Core Prometheus metrics initialized")
             
         except Exception as e:
             logger.error(f"Error initializing core metrics: {str(e)}")
             raise InfrastructureError(f"Failed to initialize core metrics: {str(e)}", service="prometheus")
+    
+    async def initialize(self) -> None:
+        """Initialize the Prometheus client"""
+        self._initialize_core_metrics()
+        logger.info("Prometheus client initialized")
     
     def start_http_server(self, port: int = 8000, addr: str = "0.0.0.0") -> None:
         """Start HTTP server for metrics endpoint"""

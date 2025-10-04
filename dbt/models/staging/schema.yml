@@ -1,100 +1,5 @@
 version: 2
 
-sources:
-  - name: raw
-    description: "Raw data from various sources"
-    tables:
-      - name: smart_meter_readings
-        description: "Raw smart meter reading data"
-        columns:
-          - name: meter_id
-            description: "Unique identifier for the smart meter"
-            tests:
-              - not_null
-              - unique
-          - name: reading_timestamp
-            description: "Timestamp of the reading"
-            tests:
-              - not_null
-          - name: consumption_kwh
-            description: "Energy consumption in kWh"
-            tests:
-              - not_null
-              - dbt_expectations.expect_column_values_to_be_between:
-                  min_value: 0
-                  max_value: 1000
-          - name: quality_score
-            description: "Data quality score"
-            tests:
-              - dbt_expectations.expect_column_values_to_be_between:
-                  min_value: 0
-                  max_value: 100
-          - name: is_anomaly
-            description: "Whether the reading is flagged as an anomaly"
-            tests:
-              - accepted_values:
-                  values: [true, false]
-      
-      - name: grid_status
-        description: "Raw grid operator status data"
-        columns:
-          - name: operator_id
-            description: "Unique identifier for the grid operator"
-            tests:
-              - not_null
-              - unique
-          - name: status_timestamp
-            description: "Timestamp of the status update"
-            tests:
-              - not_null
-          - name: grid_frequency_hz
-            description: "Grid frequency in Hz"
-            tests:
-              - dbt_expectations.expect_column_values_to_be_between:
-                  min_value: 45
-                  max_value: 65
-          - name: grid_voltage_kv
-            description: "Grid voltage in kV"
-            tests:
-              - dbt_expectations.expect_column_values_to_be_between:
-                  min_value: 100
-                  max_value: 500
-          - name: is_grid_stable
-            description: "Whether the grid is stable"
-            tests:
-              - accepted_values:
-                  values: [true, false]
-      
-      - name: weather_observations
-        description: "Raw weather station observation data"
-        columns:
-          - name: station_id
-            description: "Unique identifier for the weather station"
-            tests:
-              - not_null
-              - unique
-          - name: observation_timestamp
-            description: "Timestamp of the observation"
-            tests:
-              - not_null
-          - name: temperature_celsius
-            description: "Temperature in Celsius"
-            tests:
-              - dbt_expectations.expect_column_values_to_be_between:
-                  min_value: -50
-                  max_value: 60
-          - name: humidity_percent
-            description: "Humidity percentage"
-            tests:
-              - dbt_expectations.expect_column_values_to_be_between:
-                  min_value: 0
-                  max_value: 100
-          - name: is_anomaly
-            description: "Whether the observation is flagged as an anomaly"
-            tests:
-              - accepted_values:
-                  values: [true, false]
-
 models:
   - name: stg_smart_meter_readings
     description: "Staging model for smart meter readings"
@@ -113,8 +18,9 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 1000
+              arguments:
+                min_value: 0
+                max_value: 1000
       - name: quality_tier
         description: "Data quality tier"
         tests:
@@ -161,14 +67,16 @@ models:
         description: "Grid frequency in Hz"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 45
-              max_value: 65
+              arguments:
+                min_value: 45
+                max_value: 65
       - name: grid_voltage_kv
         description: "Grid voltage in kV"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 100
-              max_value: 500
+              arguments:
+                min_value: 100
+                max_value: 500
       - name: is_grid_stable
         description: "Whether the grid is stable"
         tests:
@@ -205,14 +113,16 @@ models:
         description: "Temperature in Celsius"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: -50
-              max_value: 60
+              arguments:
+                min_value: -50
+                max_value: 60
       - name: humidity_percent
         description: "Humidity percentage"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
+              arguments:
+                min_value: 0
+                max_value: 100
       - name: is_anomaly
         description: "Whether the observation is flagged as an anomaly"
         tests:

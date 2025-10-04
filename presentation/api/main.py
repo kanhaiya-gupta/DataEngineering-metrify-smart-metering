@@ -24,6 +24,7 @@ from .middleware.auth_middleware import AuthMiddleware
 from .middleware.logging_middleware import LoggingMiddleware
 from .middleware.monitoring_middleware import MonitoringMiddleware
 from src.core.config.config_loader import get_app_config
+from src.infrastructure.database.config import DatabaseConfig
 from src.infrastructure.external.monitoring.monitoring_service import MonitoringService
 from src.infrastructure.external.monitoring.prometheus.prometheus_client import PrometheusClient
 from src.infrastructure.external.monitoring.grafana.grafana_client import GrafanaClient
@@ -49,6 +50,12 @@ async def lifespan(app: FastAPI):
     try:
         # Initialize monitoring service
         app_config = get_app_config()
+        
+        # Initialize database and create tables
+        logger.info("Initializing database...")
+        db_config = DatabaseConfig()
+        db_config.create_tables()
+        logger.info("Database tables created successfully")
         
         # Create monitoring clients
         prometheus_client = PrometheusClient(

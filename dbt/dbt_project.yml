@@ -33,27 +33,15 @@ models:
       +materialized: view
       +schema: staging
       +tags: ["staging"]
-      smart_meter_readings:
+      stg_smart_meter_readings:
         +materialized: table
-        +indexes:
-          - columns: ['meter_id', 'reading_timestamp']
-            type: 'btree'
-          - columns: ['reading_timestamp']
-            type: 'btree'
-      grid_status:
+        +cluster_by: ['meter_id', 'reading_timestamp']
+      stg_grid_status:
         +materialized: table
-        +indexes:
-          - columns: ['operator_id', 'status_timestamp']
-            type: 'btree'
-          - columns: ['status_timestamp']
-            type: 'btree'
-      weather_data:
+        +cluster_by: ['operator_id', 'status_timestamp']
+      stg_weather_data:
         +materialized: table
-        +indexes:
-          - columns: ['station_id', 'observation_timestamp']
-            type: 'btree'
-          - columns: ['observation_timestamp']
-            type: 'btree'
+        +cluster_by: ['station_id', 'observation_timestamp']
     
     marts:
       +materialized: table
@@ -61,31 +49,29 @@ models:
       +tags: ["marts"]
       fct_smart_meter_analytics:
         +materialized: table
-        +indexes:
-          - columns: ['meter_id', 'date_hour']
-            type: 'btree'
-          - columns: ['date_hour']
-            type: 'btree'
+        +cluster_by: ['meter_id', 'date_hour']
       dim_meters:
         +materialized: table
-        +indexes:
-          - columns: ['meter_id']
-            type: 'btree'
+        +cluster_by: ['meter_id']
       dim_grid_operators:
         +materialized: table
-        +indexes:
-          - columns: ['operator_id']
-            type: 'btree'
+        +cluster_by: ['operator_id']
       dim_weather_stations:
         +materialized: table
-        +indexes:
-          - columns: ['station_id']
-            type: 'btree'
+        +cluster_by: ['station_id']
     
     metrics:
-      +materialized: view
+      +materialized: table
       +schema: metrics
       +tags: ["metrics"]
+      daily_consumption_metrics:
+        +cluster_by: ['meter_id', 'date']
+      energy_efficiency_metrics:
+        +cluster_by: ['meter_id', 'date_hour']
+      grid_performance_metrics:
+        +cluster_by: ['operator_id', 'status_date']
+      weather_correlation_metrics:
+        +cluster_by: ['meter_id', 'date_hour']
 
 seeds:
   metrify_smart_metering:

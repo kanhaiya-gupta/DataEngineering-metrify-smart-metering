@@ -22,7 +22,8 @@ from src.application.dto.smart_meter_dto import (
 )
 from src.application.use_cases.ingest_smart_meter_data import IngestSmartMeterDataUseCase
 from src.application.use_cases.detect_anomalies import DetectAnomaliesUseCase
-from src.core.config.config_loader import get_database_config, get_kafka_config, get_s3_config
+from src.infrastructure.database.config import get_database_config
+from src.core.config.config_loader import get_kafka_config, get_s3_config
 from src.infrastructure.database.repositories.smart_meter_repository import SmartMeterRepository
 from src.infrastructure.external.apis.data_quality_service import DataQualityService
 from src.infrastructure.external.apis.anomaly_detection_service import AnomalyDetectionService
@@ -39,7 +40,8 @@ router = APIRouter()
 def get_smart_meter_repository():
     """Get smart meter repository instance"""
     db_config = get_database_config()
-    return SmartMeterRepository(db_config)
+    session = db_config.session_factory()
+    return SmartMeterRepository(session)
 
 def get_data_quality_service():
     """Get data quality service instance"""

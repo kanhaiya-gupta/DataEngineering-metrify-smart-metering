@@ -21,7 +21,8 @@ from src.application.dto.grid_status_dto import (
     GridOperatorSearchDTO
 )
 from src.application.use_cases.process_grid_status import ProcessGridStatusUseCase
-from src.core.config.config_loader import get_database_config, get_kafka_config, get_s3_config
+from src.infrastructure.database.config import get_database_config
+from src.core.config.config_loader import get_kafka_config, get_s3_config
 from src.infrastructure.database.repositories.grid_operator_repository import GridOperatorRepository
 from src.infrastructure.external.apis.data_quality_service import DataQualityService
 from src.infrastructure.external.apis.anomaly_detection_service import AnomalyDetectionService
@@ -38,7 +39,8 @@ router = APIRouter()
 def get_grid_operator_repository():
     """Get grid operator repository instance"""
     db_config = get_database_config()
-    return GridOperatorRepository(db_config)
+    session = db_config.session_factory()
+    return GridOperatorRepository(session)
 
 def get_data_quality_service():
     """Get data quality service instance"""

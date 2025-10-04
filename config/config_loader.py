@@ -103,6 +103,15 @@ class ConfigLoader:
                         self.yaml_config['s3'] = {}
                     self.yaml_config['s3'].update(s3_config)
             
+            # Load Data Sources config
+            data_sources_file = self.config_dir / "external_services" / "data_sources.yaml"
+            if data_sources_file.exists():
+                with open(data_sources_file, 'r') as f:
+                    data_sources_config = yaml.safe_load(f)
+                    if 'data_sources' not in self.yaml_config:
+                        self.yaml_config['data_sources'] = {}
+                    self.yaml_config['data_sources'].update(data_sources_config)
+            
             # Load Snowflake config
             snowflake_file = self.config_dir / "external_services" / "snowflake.yaml"
             if snowflake_file.exists():

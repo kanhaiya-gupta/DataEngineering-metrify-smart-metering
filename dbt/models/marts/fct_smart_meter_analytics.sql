@@ -122,12 +122,12 @@ enriched_metrics as (
 final_metrics as (
     select
         *,
-        -- Time features
-        extract(hour from date_hour) as hour_of_day,
-        extract(dow from date_hour) as day_of_week,
-        extract(month from date_hour) as month_of_year,
-        extract(quarter from date_hour) as quarter_of_year,
-        extract(year from date_hour) as year,
+        -- Time features (Snowflake syntax)
+        hour(date_hour) as hour_of_day,
+        dayofweek(date_hour) as day_of_week,
+        month(date_hour) as month_of_year,
+        quarter(date_hour) as quarter_of_year,
+        year(date_hour) as year,
         
         -- Date features
         date_hour::date as date,
@@ -136,21 +136,21 @@ final_metrics as (
         
         -- Business day classification
         case 
-            when extract(dow from date_hour) in (1, 2, 3, 4, 5) then 'WEEKDAY'
+            when dayofweek(date_hour) in (1, 2, 3, 4, 5) then 'WEEKDAY'
             else 'WEEKEND'
         end as day_type,
         
         -- Season classification
         case 
-            when extract(month from date_hour) in (12, 1, 2) then 'WINTER'
-            when extract(month from date_hour) in (3, 4, 5) then 'SPRING'
-            when extract(month from date_hour) in (6, 7, 8) then 'SUMMER'
-            when extract(month from date_hour) in (9, 10, 11) then 'FALL'
+            when month(date_hour) in (12, 1, 2) then 'WINTER'
+            when month(date_hour) in (3, 4, 5) then 'SPRING'
+            when month(date_hour) in (6, 7, 8) then 'SUMMER'
+            when month(date_hour) in (9, 10, 11) then 'FALL'
         end as season,
         
         -- Peak season classification
         case 
-            when extract(month from date_hour) in (6, 7, 8, 12, 1) then true
+            when month(date_hour) in (6, 7, 8, 12, 1) then true
             else false
         end as is_peak_season
         

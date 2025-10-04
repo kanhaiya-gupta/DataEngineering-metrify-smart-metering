@@ -2,7 +2,7 @@
 -- Transforms raw grid status data into a clean, consistent format
 
 with source_data as (
-    select * from {{ source('raw', 'grid_status') }}
+    select * from {{ source('raw', 'grid_status_updates') }}
 ),
 
 cleaned_data as (
@@ -19,32 +19,24 @@ cleaned_data as (
         -- Grid status values
         grid_frequency_hz,
         grid_voltage_kv,
-        grid_load_mw,
-        grid_capacity_mw,
-        grid_efficiency_percent,
+        power_generation_mw,
+        power_consumption_mw,
+        grid_stability_score,
         
         -- Status indicators
-        is_grid_stable,
-        is_under_frequency,
-        is_over_frequency,
-        is_under_voltage,
-        is_over_voltage,
-        is_overload,
-        is_emergency,
+        is_stable,
+        alert_level,
         
         -- Quality metrics
-        data_quality_score,
-        is_anomaly,
-        anomaly_score,
+        grid_stability_score,
         
         -- Metadata
         status_source,
         data_quality_flags,
         
         -- Location context
-        grid_region,
-        substation_id,
-        control_area,
+        region_code,
+        operator_name,
         
         -- Data lineage
         ingestion_batch_id,
@@ -106,23 +98,23 @@ validated_data as (
 enriched_data as (
     select
         *,
-        -- Time-based features
-        extract(hour from status_timestamp) as status_hour,
-        extract(dow from status_timestamp) as day_of_week,
-        extract(month from status_timestamp) as status_month,
-        extract(quarter from status_timestamp) as status_quarter,
-        extract(year from status_timestamp) as status_year,
+        -- Time-based features (Snowflake syntax)
+        hour(status_timestamp) as status_hour,
+        dayofweek(status_timestamp) as day_of_week,
+        month(status_timestamp) as status_month,
+        quarter(status_timestamp) as status_quarter,
+        year(status_timestamp) as status_year,
         
         -- Peak hour classification
         case 
-            when extract(hour from status_timestamp) between {{ var('business_rules').peak_hours_start }} 
+            when hour(status_timestamp) between {{ var('business_rules').peak_hours_start }} 
                  and {{ var('business_rules').peak_hours_end }} then true
             else false
         end as is_peak_hour_calculated,
         
         -- Weekend classification
         case 
-            when extract(dow from status_timestamp) in ({{ var('business_rules').weekend_days | join(', ') }}) then true
+            when dayofweek(status_timestamp) in ({{ var('business_rules').weekend_days | join(', ') }}) then true
             else false
         end as is_weekend_calculated,
         

@@ -107,31 +107,31 @@ validated_data as (
 enriched_data as (
     select
         *,
-        -- Time-based features
-        extract(hour from reading_timestamp) as reading_hour,
-        extract(dow from reading_timestamp) as day_of_week,
-        extract(month from reading_timestamp) as reading_month,
-        extract(quarter from reading_timestamp) as reading_quarter,
-        extract(year from reading_timestamp) as reading_year,
+        -- Time-based features (Snowflake syntax)
+        hour(reading_timestamp) as reading_hour,
+        dayofweek(reading_timestamp) as day_of_week,
+        month(reading_timestamp) as reading_month,
+        quarter(reading_timestamp) as reading_quarter,
+        year(reading_timestamp) as reading_year,
         
         -- Peak hour classification
         case 
-            when extract(hour from reading_timestamp) between {{ var('business_rules').peak_hours_start }} 
+            when hour(reading_timestamp) between {{ var('business_rules').peak_hours_start }} 
                  and {{ var('business_rules').peak_hours_end }} then true
             else false
         end as is_peak_hour_calculated,
         
         -- Off-peak hour classification
         case 
-            when extract(hour from reading_timestamp) between {{ var('business_rules').off_peak_hours_start }} 
-                 and 23 or extract(hour from reading_timestamp) between 0 
+            when hour(reading_timestamp) between {{ var('business_rules').off_peak_hours_start }} 
+                 and 23 or hour(reading_timestamp) between 0 
                  and {{ var('business_rules').off_peak_hours_end }} then true
             else false
         end as is_off_peak_hour,
         
         -- Weekend classification
         case 
-            when extract(dow from reading_timestamp) in ({{ var('business_rules').weekend_days | join(', ') }}) then true
+            when dayofweek(reading_timestamp) in ({{ var('business_rules').weekend_days | join(', ') }}) then true
             else false
         end as is_weekend_calculated,
         

@@ -69,18 +69,20 @@ graph TB
     
     API --> POSTGRES
     WORKERS --> POSTGRES
-    WORKERS --> SNOWFLAKE
     WORKERS --> S3
     WORKERS --> CACHE
     
-    ML --> POSTGRES
-    ML --> SNOWFLAKE
-    ANALYTICS --> POSTGRES
-    ANALYTICS --> SNOWFLAKE
-    
+    %% Data Warehouse Flow (Proper Data Engineering)
+    S3 --> DBT
     DBT --> SNOWFLAKE
-    FLINK --> POSTGRES
     FLINK --> S3
+    FLINK --> POSTGRES
+    
+    %% ML and Analytics consume from Data Warehouse
+    SNOWFLAKE --> ML
+    SNOWFLAKE --> ANALYTICS
+    ML --> SNOWFLAKE
+    ANALYTICS --> SNOWFLAKE
     
     %% Monitoring connections
     API --> DATADOG
@@ -188,18 +190,20 @@ graph TB
     
     API --> POSTGRES
     WORKERS --> POSTGRES
-    WORKERS --> SNOWFLAKE
     WORKERS --> S3
     WORKERS --> CACHE
     
-    ML --> POSTGRES
-    ML --> SNOWFLAKE
-    ANALYTICS --> POSTGRES
-    ANALYTICS --> SNOWFLAKE
-    
+    %% Data Warehouse Flow (Proper Data Engineering)
+    S3 --> DBT
     DBT --> SNOWFLAKE
-    FLINK --> POSTGRES
     FLINK --> S3
+    FLINK --> POSTGRES
+    
+    %% ML and Analytics consume from Data Warehouse
+    SNOWFLAKE --> ML
+    SNOWFLAKE --> ANALYTICS
+    ML --> SNOWFLAKE
+    ANALYTICS --> SNOWFLAKE
     
     %% Monitoring connections
     API --> DATADOG
@@ -295,6 +299,17 @@ The comprehensive system overview includes all the advanced features we've imple
 - **[Weather API](api/weather-api.md)** - Weather station endpoints and operations
 - **[Analytics API](api/analytics-api.md)** - Analytics and reporting endpoints
 - **[API Reference](api/api-reference.md)** - Complete API reference with examples
+
+### 🗄️ Infrastructure & Integrations
+- **[Snowflake Integration](infrastructure/snowflake-integration.md)** - Snowflake data warehouse setup and usage
+
+### 📊 Data Engineering Documentation
+- **[Data Sources Configuration](data-engineering/data-sources-configuration.md)** - CSV file paths, Kafka topics, and data processing settings
+- **[Smart Meter DAG Implementation](data-engineering/smart-meter-dag-implementation.md)** - Airflow DAG for smart meter data processing pipeline
+- **[Worker Integration Implementation](data-engineering/worker-integration-implementation.md)** - Worker integration testing and Kafka message flow
+- **[Data Quality Implementation](data-engineering/data-quality-implementation.md)** - Comprehensive data quality validation, monitoring, and error handling
+- **[Performance Optimization Implementation](data-engineering/performance-optimization-implementation.md)** - Adaptive batch processing, resource management, and performance monitoring
+- **[dbt Implementation](data-engineering/dbt-implementation.md)** - Data transformations, dimensional modeling, and analytics in Snowflake
 
 ### 🚀 Deployment Documentation
 - **[Deployment Overview](deployment/deployment-overview.md)** - Deployment strategies and environments

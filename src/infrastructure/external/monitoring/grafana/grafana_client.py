@@ -75,9 +75,31 @@ class GrafanaClient:
             logger.error(f"Failed to initialize Grafana client: {str(e)}")
             raise InfrastructureError(f"Failed to initialize Grafana: {str(e)}", service="grafana")
     
+    async def get_data_source_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+        """Get data source by name"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/datasources")
+            response.raise_for_status()
+            
+            data_sources = response.json()
+            for ds in data_sources:
+                if ds.get("name") == name:
+                    return ds
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Error checking for existing data source: {str(e)}")
+            return None
+    
     async def create_data_source(self, data_source_config: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new data source in Grafana"""
         try:
+            # First check if data source already exists
+            existing_ds = await self.get_data_source_by_name(data_source_config.get("name"))
+            if existing_ds:
+                logger.info(f"Data source '{data_source_config.get('name')}' already exists, skipping creation")
+                return existing_ds
+            
             response = self.session.post(
                 f"{self.base_url}/api/datasources",
                 json=data_source_config

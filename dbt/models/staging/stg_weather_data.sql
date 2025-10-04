@@ -20,7 +20,7 @@ cleaned_data as (
         temperature_celsius,
         humidity_percent,
         pressure_hpa,
-        wind_speed_mps,
+        wind_speed_ms,
         wind_direction_degrees,
         precipitation_mm,
         visibility_km,
@@ -38,11 +38,10 @@ cleaned_data as (
         data_quality_flags,
         
         -- Location context
-        station_latitude,
-        station_longitude,
+        station_location_lat,
+        station_location_lon,
         station_elevation_m,
-        station_address,
-        weather_station_type,
+        station_name,
         
         -- Data lineage
         ingestion_batch_id,
@@ -130,23 +129,23 @@ validated_data as (
 enriched_data as (
     select
         *,
-        -- Time-based features
-        extract(hour from observation_timestamp) as observation_hour,
-        extract(dow from observation_timestamp) as day_of_week,
-        extract(month from observation_timestamp) as observation_month,
-        extract(quarter from observation_timestamp) as observation_quarter,
-        extract(year from observation_timestamp) as observation_year,
+        -- Time-based features (Snowflake syntax)
+        hour(observation_timestamp) as observation_hour,
+        dayofweek(observation_timestamp) as day_of_week,
+        month(observation_timestamp) as observation_month,
+        quarter(observation_timestamp) as observation_quarter,
+        year(observation_timestamp) as observation_year,
         
         -- Peak hour classification
         case 
-            when extract(hour from observation_timestamp) between {{ var('business_rules').peak_hours_start }} 
+            when hour(observation_timestamp) between {{ var('business_rules').peak_hours_start }} 
                  and {{ var('business_rules').peak_hours_end }} then true
             else false
         end as is_peak_hour_calculated,
         
         -- Weekend classification
         case 
-            when extract(dow from observation_timestamp) in ({{ var('business_rules').weekend_days | join(', ') }}) then true
+            when dayofweek(observation_timestamp) in ({{ var('business_rules').weekend_days | join(', ') }}) then true
             else false
         end as is_weekend_calculated,
         
@@ -173,17 +172,17 @@ enriched_data as (
         
         -- Wind categories
         case 
-            when wind_speed_mps is null then 'UNKNOWN'
-            when wind_speed_mps < 1 then 'CALM'
-            when wind_speed_mps < 5 then 'LIGHT'
-            when wind_speed_mps < 10 then 'MODERATE'
-            when wind_speed_mps < 20 then 'STRONG'
+            when wind_speed_ms is null then 'UNKNOWN'
+            when wind_speed_ms < 1 then 'CALM'
+            when wind_speed_ms < 5 then 'LIGHT'
+            when wind_speed_ms < 10 then 'MODERATE'
+            when wind_speed_ms < 20 then 'STRONG'
             else 'VERY_STRONG'
         end as wind_category,
         
         -- Weather condition classification
         case 
-            when precipitation_mm > 0 and wind_speed_mps > 10 then 'STORMY'
+            when precipitation_mm > 0 and wind_speed_ms > 10 then 'STORMY'
             when precipitation_mm > 5 then 'HEAVY_RAIN'
             when precipitation_mm > 0 then 'RAINY'
             when cloud_cover_percent > 80 then 'CLOUDY'

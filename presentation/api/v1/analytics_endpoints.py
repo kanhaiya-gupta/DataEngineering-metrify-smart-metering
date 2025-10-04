@@ -11,7 +11,8 @@ from datetime import datetime, timedelta
 
 from src.application.use_cases.analyze_weather_impact import AnalyzeWeatherImpactUseCase
 from src.application.use_cases.detect_anomalies import DetectAnomaliesUseCase
-from src.core.config.config_loader import get_database_config, get_kafka_config, get_s3_config, get_snowflake_config
+from src.infrastructure.database.config import get_database_config
+from src.core.config.config_loader import get_kafka_config, get_s3_config, get_snowflake_config
 from src.infrastructure.database.repositories.smart_meter_repository import SmartMeterRepository
 from src.infrastructure.database.repositories.grid_operator_repository import GridOperatorRepository
 from src.infrastructure.database.repositories.weather_station_repository import WeatherStationRepository
@@ -31,17 +32,20 @@ router = APIRouter()
 def get_smart_meter_repository():
     """Get smart meter repository instance"""
     db_config = get_database_config()
-    return SmartMeterRepository(db_config)
+    session = db_config.session_factory()
+    return SmartMeterRepository(session)
 
 def get_grid_operator_repository():
     """Get grid operator repository instance"""
     db_config = get_database_config()
-    return GridOperatorRepository(db_config)
+    session = db_config.session_factory()
+    return GridOperatorRepository(session)
 
 def get_weather_station_repository():
     """Get weather station repository instance"""
     db_config = get_database_config()
-    return WeatherStationRepository(db_config)
+    session = db_config.session_factory()
+    return WeatherStationRepository(session)
 
 def get_data_quality_service():
     """Get data quality service instance"""

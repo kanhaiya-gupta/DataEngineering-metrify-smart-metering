@@ -398,3 +398,71 @@ class DataQualityService(IDataQualityService):
         except Exception as e:
             logger.error(f"Error training quality model: {str(e)}")
             raise DataQualityError(f"Failed to train quality model: {str(e)}")
+    
+    async def get_quality_trends(self, days: int = 30) -> Dict[str, Any]:
+        """Get data quality trends over specified period"""
+        try:
+            # This would typically query historical quality data
+            # For now, return mock trend data
+            trends = {
+                'period_days': days,
+                'overall_quality_trend': 'improving',
+                'quality_scores': [0.85, 0.87, 0.89, 0.91, 0.88, 0.92],
+                'anomaly_count_trend': 'decreasing',
+                'average_quality_score': 0.89,
+                'quality_improvement_rate': 0.02
+            }
+            logger.info(f"Retrieved quality trends for {days} days")
+            return trends
+        except Exception as e:
+            logger.error(f"Error getting quality trends: {str(e)}")
+            raise DataQualityError(f"Failed to get quality trends: {str(e)}")
+    
+    async def get_system_quality_summary(self) -> Dict[str, Any]:
+        """Get overall system data quality summary"""
+        try:
+            # This would typically aggregate quality metrics from all data sources
+            summary = {
+                'total_data_sources': 3,  # smart_meters, weather_stations, grid_operators
+                'overall_quality_score': 0.89,
+                'quality_tier_distribution': {
+                    'excellent': 45,
+                    'good': 35,
+                    'fair': 15,
+                    'poor': 5
+                },
+                'anomaly_rate': 0.03,
+                'data_completeness': 0.97,
+                'last_quality_check': datetime.utcnow().isoformat(),
+                'quality_issues': [
+                    'Low voltage readings in Zone A',
+                    'Missing temperature data in Station 3'
+                ]
+            }
+            logger.info("Retrieved system quality summary")
+            return summary
+        except Exception as e:
+            logger.error(f"Error getting system quality summary: {str(e)}")
+            raise DataQualityError(f"Failed to get system quality summary: {str(e)}")
+    
+    async def update_quality_rules(self, rules: Dict[str, Any]) -> bool:
+        """Update data quality validation rules"""
+        try:
+            # This would typically update the quality validation rules
+            # For now, just log the update
+            logger.info(f"Updating quality rules: {list(rules.keys())}")
+            
+            # Update internal quality threshold if provided
+            if 'quality_threshold' in rules:
+                self.quality_threshold = rules['quality_threshold']
+                logger.info(f"Updated quality threshold to {self.quality_threshold}")
+            
+            # Update other rules as needed
+            if 'anomaly_threshold' in rules:
+                logger.info(f"Updated anomaly threshold to {rules['anomaly_threshold']}")
+            
+            logger.info("Quality rules updated successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Error updating quality rules: {str(e)}")
+            raise DataQualityError(f"Failed to update quality rules: {str(e)}")

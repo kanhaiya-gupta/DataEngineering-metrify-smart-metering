@@ -2,14 +2,14 @@ version: 2
 
 models:
   - name: fct_smart_meter_analytics
-    description: "Fact table for smart meter analytics"
+    description: "Fact table for smart meter analytics with hourly aggregations"
     columns:
       - name: meter_id
         description: "Unique identifier for the smart meter"
         tests:
           - not_null
       - name: date_hour
-        description: "Hour timestamp for the analytics"
+        description: "Hour timestamp for the aggregation"
         tests:
           - not_null
       - name: total_consumption_kwh
@@ -17,31 +17,34 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 1000
+              arguments:
+                min_value: 0
+                max_value: 1000
+      - name: avg_consumption_kwh
+        description: "Average consumption in kWh for the hour"
+        tests:
+          - not_null
       - name: reading_count
         description: "Number of readings in the hour"
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 1
-              max_value: 60
-      - name: avg_consumption_kwh
-        description: "Average consumption in kWh for the hour"
-        tests:
-          - not_null
-      - name: excellent_quality_percent
-        description: "Percentage of excellent quality readings"
+              arguments:
+                min_value: 1
+                max_value: 60
+      - name: avg_quality_score
+        description: "Average quality score for the hour"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
-      - name: anomaly_percent
-        description: "Percentage of anomalous readings"
+              arguments:
+                min_value: 0
+                max_value: 100
+      - name: anomaly_count
+        description: "Number of anomalies in the hour"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
+              arguments:
+                min_value: 0
       - name: consumption_category
         description: "Consumption category classification"
         tests:
@@ -52,19 +55,27 @@ models:
         tests:
           - accepted_values:
               values: ['EXCELLENT', 'GOOD', 'FAIR', 'POOR']
-      - name: anomaly_classification
-        description: "Anomaly classification for the hour"
+      - name: is_peak_hour
+        description: "Whether the hour is a peak hour"
         tests:
           - accepted_values:
-              values: ['HIGH_ANOMALY', 'MEDIUM_ANOMALY', 'LOW_ANOMALY', 'NO_ANOMALY']
-      - name: time_period_classification
-        description: "Time period classification"
+              values: [true, false]
+      - name: is_weekend
+        description: "Whether the hour is on a weekend"
         tests:
           - accepted_values:
-              values: ['PEAK_WEEKDAY', 'PEAK_WEEKEND', 'OFF_PEAK_WEEKDAY', 'OFF_PEAK_WEEKEND', 'OTHER']
-  
+              values: [true, false]
+      - name: tariff_type
+        description: "Tariff type for the meter"
+        tests:
+          - not_null
+      - name: time_of_use_period
+        description: "Time of use period classification"
+        tests:
+          - not_null
+
   - name: dim_meters
-    description: "Dimension table for smart meters"
+    description: "Dimension table for smart meters with master data and metrics"
     columns:
       - name: meter_id
         description: "Unique identifier for the smart meter"
@@ -72,21 +83,23 @@ models:
           - not_null
           - unique
       - name: meter_address
-        description: "Address of the smart meter"
+        description: "Physical address of the meter"
         tests:
           - not_null
       - name: latitude
-        description: "Latitude of the meter location"
+        description: "Latitude coordinate of the meter"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: -90
-              max_value: 90
+              arguments:
+                min_value: -90
+                max_value: 90
       - name: longitude
-        description: "Longitude of the meter location"
+        description: "Longitude coordinate of the meter"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: -180
-              max_value: 180
+              arguments:
+                min_value: -180
+                max_value: 180
       - name: tariff_type
         description: "Tariff type for the meter"
         tests:
@@ -96,61 +109,81 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 1
+              arguments:
+                min_value: 1
       - name: avg_consumption_kwh
         description: "Average consumption in kWh"
         tests:
-          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
       - name: avg_quality_score
         description: "Average quality score"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
-      - name: overall_quality_tier
-        description: "Overall quality tier for the meter"
+              arguments:
+                min_value: 0
+                max_value: 100
+      - name: total_anomalies
+        description: "Total number of anomalies"
         tests:
-          - accepted_values:
-              values: ['EXCELLENT', 'GOOD', 'FAIR', 'POOR']
-      - name: anomaly_classification
-        description: "Anomaly classification for the meter"
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+      - name: excellent_quality_percent
+        description: "Percentage of excellent quality readings"
         tests:
-          - accepted_values:
-              values: ['HIGH_ANOMALY', 'MEDIUM_ANOMALY', 'LOW_ANOMALY', 'NO_ANOMALY']
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
+      - name: anomaly_percent
+        description: "Percentage of anomalous readings"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
       - name: consumption_tier
         description: "Consumption tier classification"
         tests:
           - accepted_values:
               values: ['ZERO_CONSUMPTION', 'VERY_LOW', 'LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH']
+      - name: overall_quality_tier
+        description: "Overall quality tier classification"
+        tests:
+          - accepted_values:
+              values: ['EXCELLENT', 'GOOD', 'FAIR', 'POOR']
+      - name: anomaly_classification
+        description: "Anomaly classification"
+        tests:
+          - accepted_values:
+              values: ['HIGH_ANOMALY', 'MEDIUM_ANOMALY', 'LOW_ANOMALY', 'NO_ANOMALY']
       - name: meter_status
         description: "Current status of the meter"
         tests:
           - accepted_values:
               values: ['ACTIVE', 'INACTIVE', 'FAULTY', 'NEEDS_MAINTENANCE']
       - name: geographic_region
-        description: "Geographic region of the meter"
+        description: "Geographic region classification"
         tests:
           - accepted_values:
-              values: ['UNKNOWN', 'NORTH_EAST', 'NORTH_WEST', 'SOUTH_EAST', 'SOUTH_WEST']
-  
+              values: ['NORTH_EAST', 'NORTH_WEST', 'SOUTH_EAST', 'SOUTH_WEST', 'UNKNOWN']
+
   - name: dim_grid_operators
-    description: "Dimension table for grid operators"
+    description: "Dimension table for grid operators with master data and metrics"
     columns:
       - name: operator_id
         description: "Unique identifier for the grid operator"
         tests:
           - not_null
           - unique
-      - name: grid_region
-        description: "Grid region for the operator"
+      - name: region_code
+        description: "Region code for the operator"
         tests:
           - not_null
-      - name: substation_id
-        description: "Substation identifier"
-        tests:
-          - not_null
-      - name: control_area
-        description: "Control area for the operator"
+      - name: operator_name
+        description: "Name of the grid operator"
         tests:
           - not_null
       - name: total_status_updates
@@ -158,25 +191,36 @@ models:
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 1
+              arguments:
+                min_value: 1
       - name: avg_frequency_hz
         description: "Average grid frequency in Hz"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 45
-              max_value: 65
+              arguments:
+                min_value: 45
+                max_value: 65
       - name: avg_voltage_kv
         description: "Average grid voltage in kV"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 100
-              max_value: 500
+              arguments:
+                min_value: 100
+                max_value: 500
       - name: stability_percent
         description: "Percentage of stable status updates"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
+              arguments:
+                min_value: 0
+                max_value: 100
+      - name: anomaly_percent
+        description: "Percentage of anomalous status updates"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
       - name: stability_classification
         description: "Stability classification"
         tests:
@@ -187,64 +231,84 @@ models:
         tests:
           - accepted_values:
               values: ['HIGH_RISK', 'MEDIUM_RISK', 'LOW_RISK']
+      - name: anomaly_classification
+        description: "Anomaly classification"
+        tests:
+          - accepted_values:
+              values: ['HIGH_ANOMALY', 'MEDIUM_ANOMALY', 'LOW_ANOMALY', 'NO_ANOMALY']
       - name: operator_status
         description: "Current status of the operator"
         tests:
           - accepted_values:
-              values: ['ACTIVE', 'INACTIVE', 'EMERGENCY', 'OVERLOADED', 'UNSTABLE']
-  
+              values: ['ACTIVE', 'INACTIVE', 'CRITICAL', 'WARNING', 'UNSTABLE']
+
   - name: dim_weather_stations
-    description: "Dimension table for weather stations"
+    description: "Dimension table for weather stations with master data and metrics"
     columns:
       - name: station_id
         description: "Unique identifier for the weather station"
         tests:
           - not_null
           - unique
+      - name: station_name
+        description: "Name of the weather station"
+        tests:
+          - not_null
       - name: latitude
-        description: "Latitude of the station location"
+        description: "Latitude coordinate of the station"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: -90
-              max_value: 90
+              arguments:
+                min_value: -90
+                max_value: 90
       - name: longitude
-        description: "Longitude of the station location"
+        description: "Longitude coordinate of the station"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: -180
-              max_value: 180
+              arguments:
+                min_value: -180
+                max_value: 180
       - name: elevation_m
         description: "Elevation in meters"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: -100
-              max_value: 10000
-      - name: station_address
-        description: "Address of the weather station"
-        tests:
-          - not_null
-      - name: weather_station_type
-        description: "Type of weather station"
-        tests:
-          - not_null
+              arguments:
+                min_value: -100
+                max_value: 10000
       - name: total_observations
         description: "Total number of observations"
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 1
+              arguments:
+                min_value: 1
       - name: avg_temperature_celsius
         description: "Average temperature in Celsius"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: -50
-              max_value: 60
+              arguments:
+                min_value: -50
+                max_value: 60
       - name: avg_humidity_percent
         description: "Average humidity percentage"
         tests:
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 100
+              arguments:
+                min_value: 0
+                max_value: 100
+      - name: total_precipitation_mm
+        description: "Total precipitation in mm"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+      - name: anomaly_percent
+        description: "Percentage of anomalous observations"
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
       - name: temperature_classification
         description: "Temperature classification"
         tests:
@@ -255,13 +319,33 @@ models:
         tests:
           - accepted_values:
               values: ['UNKNOWN', 'DRY', 'COMFORTABLE', 'MODERATE', 'HUMID']
+      - name: wind_classification
+        description: "Wind classification"
+        tests:
+          - accepted_values:
+              values: ['UNKNOWN', 'CALM', 'LIGHT', 'MODERATE', 'STRONG', 'VERY_STRONG']
+      - name: precipitation_classification
+        description: "Precipitation classification"
+        tests:
+          - accepted_values:
+              values: ['UNKNOWN', 'NO_PRECIPITATION', 'LIGHT_PRECIPITATION', 'MODERATE_PRECIPITATION', 'HEAVY_PRECIPITATION', 'VERY_HEAVY_PRECIPITATION']
+      - name: anomaly_classification
+        description: "Anomaly classification"
+        tests:
+          - accepted_values:
+              values: ['HIGH_ANOMALY', 'MEDIUM_ANOMALY', 'LOW_ANOMALY', 'NO_ANOMALY']
       - name: station_status
         description: "Current status of the station"
         tests:
           - accepted_values:
               values: ['ACTIVE', 'INACTIVE', 'FAULTY', 'LOW_ACTIVITY']
       - name: geographic_region
-        description: "Geographic region of the station"
+        description: "Geographic region classification"
         tests:
           - accepted_values:
-              values: ['UNKNOWN', 'NORTH_EAST', 'NORTH_WEST', 'SOUTH_EAST', 'SOUTH_WEST']
+              values: ['NORTH_EAST', 'NORTH_WEST', 'SOUTH_EAST', 'SOUTH_WEST', 'UNKNOWN']
+      - name: elevation_classification
+        description: "Elevation classification"
+        tests:
+          - accepted_values:
+              values: ['UNKNOWN', 'LOW_ELEVATION', 'MEDIUM_ELEVATION', 'HIGH_ELEVATION', 'VERY_HIGH_ELEVATION']

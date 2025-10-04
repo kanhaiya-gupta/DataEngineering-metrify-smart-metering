@@ -64,8 +64,8 @@ class MonitoringService:
     async def _start_monitoring_tasks(self) -> None:
         """Start background monitoring tasks"""
         try:
-            # Start Prometheus HTTP server
-            self.prometheus.start_http_server(port=8000)
+            # Note: Prometheus HTTP server is not started here to avoid port conflicts
+            # Metrics are exposed through the API /metrics endpoint instead
             
             # Start metrics collection task
             metrics_task = asyncio.create_task(self._metrics_collection_loop())
@@ -131,19 +131,22 @@ class MonitoringService:
                 region="eu-central-1"
             )
             
-            # Send health status to DataDog
-            if prometheus_health and grafana_health and jaeger_health and datadog_health:
-                await self.datadog.send_event(
-                    title="Monitoring Service Health Check",
-                    text="All monitoring components are healthy",
-                    alert_type="success"
-                )
+            # Send health status to DataDog (only if API keys are configured)
+            if self.datadog.api_key and self.datadog.app_key:
+                if prometheus_health and grafana_health and jaeger_health and datadog_health:
+                    await self.datadog.send_event(
+                        title="Monitoring Service Health Check",
+                        text="All monitoring components are healthy",
+                        alert_type="success"
+                    )
+                else:
+                    await self.datadog.send_event(
+                        title="Monitoring Service Health Check",
+                        text="Some monitoring components are unhealthy",
+                        alert_type="warning"
+                    )
             else:
-                await self.datadog.send_event(
-                    title="Monitoring Service Health Check",
-                    text="Some monitoring components are unhealthy",
-                    alert_type="warning"
-                )
+                logger.info("DataDog API keys not configured, skipping event sending")
             
         except Exception as e:
             logger.error(f"Error performing health checks: {str(e)}")
@@ -484,7 +487,7 @@ class MonitoringService:
                 "initialized": self._initialized,
                 "prometheus": {
                     "initialized": True,
-                    "metrics_endpoint": "http://localhost:8000/metrics"
+                    "metrics_endpoint": "http://localhost:8000/metrics"  # Metrics served through API
                 },
                 "grafana": await self.grafana.get_client_info(),
                 "jaeger": self.jaeger.get_client_info(),

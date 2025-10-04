@@ -5,14 +5,17 @@ Database connection and configuration management
 
 import os
 from typing import Optional
-from sqlalchemy import create_engine, Engine
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 from contextlib import contextmanager
 
-from .models.smart_meter_model import Base as SmartMeterBase
-from .models.grid_operator_model import Base as GridOperatorBase
-from .models.weather_station_model import Base as WeatherStationBase
+from .base import Base
+# Import all models to register them with the shared Base
+from .models.smart_meter_model import SmartMeterModel, MeterReadingModel, MeterEventModel
+from .models.grid_operator_model import GridOperatorModel, GridStatusModel, GridEventModel
+from .models.weather_station_model import WeatherStationModel, WeatherObservationModel, WeatherEventModel
 
 
 class DatabaseConfig:
@@ -78,17 +81,13 @@ class DatabaseConfig:
     
     def create_tables(self) -> None:
         """Create all database tables"""
-        # Create tables for all models
-        SmartMeterBase.metadata.create_all(self.engine)
-        GridOperatorBase.metadata.create_all(self.engine)
-        WeatherStationBase.metadata.create_all(self.engine)
+        # Create tables for all models using the shared base
+        Base.metadata.create_all(self.engine)
     
     def drop_tables(self) -> None:
         """Drop all database tables"""
-        # Drop tables for all models
-        SmartMeterBase.metadata.drop_all(self.engine)
-        GridOperatorBase.metadata.drop_all(self.engine)
-        WeatherStationBase.metadata.drop_all(self.engine)
+        # Drop tables for all models using the shared base
+        Base.metadata.drop_all(self.engine)
     
     @contextmanager
     def get_session(self) -> Session:

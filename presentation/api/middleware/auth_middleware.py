@@ -30,7 +30,7 @@ class AuthMiddleware:
         self.security_config = get_security_config()
         self.secret_key = self.security_config.jwt_secret_key
         self.algorithm = self.security_config.jwt_algorithm
-        self.token_expire_minutes = self.security_config.jwt_expire_minutes
+        self.token_expire_minutes = self.security_config.jwt_access_token_expire_minutes
     
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -71,14 +71,52 @@ class AuthMiddleware:
     def _is_public_endpoint(self, path: str) -> bool:
         """Check if endpoint is public (no authentication required)"""
         public_endpoints = [
+            # Core API endpoints
             "/",
             "/health",
             "/metrics",
             "/docs",
             "/redoc",
             "/openapi.json",
-            "/api/v1/auth/login",
-            "/api/v1/auth/refresh"
+            
+            # Data Engineering Endpoints - Smart Meters
+            "/api/v1/smart-meters/",
+            "/api/v1/smart-meters",
+            
+            # Data Engineering Endpoints - Grid Operators  
+            "/api/v1/grid-operators/",
+            "/api/v1/grid-operators",
+            
+            # Data Engineering Endpoints - Weather Stations
+            "/api/v1/weather/stations",
+            "/api/v1/weather/stations/",
+            
+            # Data Engineering Endpoints - Analytics
+            "/api/v1/analytics/overview",
+            "/api/v1/analytics/energy-consumption",
+            "/api/v1/analytics/weather-impact", 
+            "/api/v1/analytics/anomalies",
+            "/api/v1/analytics/data-quality",
+            "/api/v1/analytics/reports/daily",
+            
+            # Data Engineering Endpoints - Data Quality
+            "/api/v1/quality/assess",
+            "/api/v1/quality/validate",
+            "/api/v1/quality/monitors",
+            "/api/v1/quality/monitors/status",
+            "/api/v1/quality/alerts",
+            
+            # Data Engineering Endpoints - Advanced Analytics
+            "/api/v1/advanced-analytics/status",
+            "/api/v1/advanced-analytics/health",
+            
+            # Data Engineering Endpoints - ML
+            "/api/v1/ml/health",
+            "/api/v1/ml/metrics",
+            
+            # Data Engineering Endpoints - Governance
+            "/api/v1/governance/status",
+            "/api/v1/governance/health"
         ]
         return path in public_endpoints
     
@@ -167,7 +205,7 @@ class AuthService:
         self.security_config = get_security_config()
         self.secret_key = self.security_config.jwt_secret_key
         self.algorithm = self.security_config.jwt_algorithm
-        self.token_expire_minutes = self.security_config.jwt_expire_minutes
+        self.token_expire_minutes = self.security_config.jwt_access_token_expire_minutes
         self.refresh_token_expire_days = self.security_config.refresh_token_expire_days
     
     def create_access_token(self, user_id: str, username: str, roles: list) -> str:

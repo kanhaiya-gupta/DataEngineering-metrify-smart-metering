@@ -5,15 +5,13 @@ SQLAlchemy model for grid operator data persistence
 
 from datetime import datetime
 from typing import Optional, Dict, Any
-from sqlalchemy import Column, String, Float, Integer, DateTime, Text, JSON, Boolean, Enum as SQLEnum
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, String, Float, Integer, DateTime, Text, JSON, Boolean, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
 from ....core.domain.enums.grid_operator_status import GridOperatorStatus
-
-Base = declarative_base()
+from ..base import Base
 
 
 class GridOperatorModel(Base):
@@ -99,7 +97,7 @@ class GridStatusModel(Base):
     
     # Primary key
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    operator_id = Column(String(255), nullable=False, index=True)
+    operator_id = Column(String(255), ForeignKey("grid_operators.operator_id"), nullable=False, index=True)
     
     # Status data
     timestamp = Column(DateTime, nullable=False, index=True)
@@ -162,7 +160,7 @@ class GridEventModel(Base):
     
     # Primary key
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    operator_id = Column(String(255), nullable=False, index=True)
+    operator_id = Column(String(255), ForeignKey("grid_operators.operator_id"), nullable=False, index=True)
     
     # Event data
     event_type = Column(String(100), nullable=False, index=True)

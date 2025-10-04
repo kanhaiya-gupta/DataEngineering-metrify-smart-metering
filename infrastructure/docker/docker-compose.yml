@@ -7,9 +7,9 @@ services:
     image: postgres:15-alpine
     container_name: metrify-postgres
     environment:
-      POSTGRES_DB: metrify_dev
-      POSTGRES_USER: metrify_dev
-      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
       - "5432:5432"
@@ -20,7 +20,7 @@ services:
     networks:
       - metrify-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U metrify_dev -d metrify_dev"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -153,13 +153,29 @@ services:
       timeout: 5s
       retries: 5
 
+  # Prometheus Pushgateway for metrics collection
+  prometheus-pushgateway:
+    image: prom/pushgateway:latest
+    container_name: metrify-prometheus-pushgateway
+    ports:
+      - "9091:9091"
+    networks:
+      - metrify-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9091/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Grafana for visualization
   grafana:
     image: grafana/grafana:latest
     container_name: metrify-grafana
+    env_file:
+      - ../../development.env
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USERNAME}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: false
       GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
     ports:
@@ -222,12 +238,14 @@ services:
   mlflow:
     image: python:3.11-slim
     container_name: metrify-mlflow
+    env_file:
+      - ../../development.env
     environment:
-      - MLFLOW_BACKEND_STORE_URI=postgresql://metrify_dev:dev_password@postgres:5432/metrify_dev
+      - MLFLOW_BACKEND_STORE_URI=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       - MLFLOW_DEFAULT_ARTIFACT_ROOT=s3://mlflow-artifacts
-      - AWS_ACCESS_KEY_ID=minioadmin
-      - AWS_SECRET_ACCESS_KEY=minioadmin123
-      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      - MLFLOW_S3_ENDPOINT_URL=${S3_ENDPOINT_URL}
     ports:
       - "5000:5000"  # MLflow UI
     volumes:
@@ -240,7 +258,7 @@ services:
     command: >
       bash -c "
         pip install mlflow psycopg2-binary boto3 &&
-        mlflow server --backend-store-uri postgresql://metrify_dev:dev_password@postgres:5432/metrify_dev 
+        mlflow server --backend-store-uri postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME} 
         --default-artifact-root s3://mlflow-artifacts 
         --host 0.0.0.0 --port 5000
       "
@@ -254,9 +272,11 @@ services:
   jupyter:
     image: jupyter/scipy-notebook:latest
     container_name: metrify-jupyter
+    env_file:
+      - ../../development.env
     environment:
       - JUPYTER_ENABLE_LAB=yes
-      - JUPYTER_TOKEN=metrify123
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN}
     ports:
       - "8888:8888"  # Jupyter Lab
     volumes:
@@ -268,7 +288,7 @@ services:
     command: >
       bash -c "
         pip install psycopg2-binary redis kafka-python minio boto3 &&
-        start-notebook.sh --NotebookApp.token='metrify123' --NotebookApp.password='' --NotebookApp.allow_origin='*' --NotebookApp.disable_check_xsrf=True
+        start-notebook.sh --NotebookApp.token='${JUPYTER_TOKEN}' --NotebookApp.password='' --NotebookApp.allow_origin='*' --NotebookApp.disable_check_xsrf=True
       "
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8888/"]
@@ -322,20 +342,8 @@ services:
       context: ../..
       dockerfile: infrastructure/docker/Dockerfile.api
     container_name: metrify-api
-    environment:
-      - METRIFY_ENVIRONMENT=development
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=metrify_dev
-      - DB_USERNAME=metrify_dev
-      - DB_PASSWORD=dev_password
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - KAFKA_SECURITY_PROTOCOL=PLAINTEXT
-      - KAFKA_CONSUMER_GROUP=metrify-dev
-      - S3_ENDPOINT_URL=http://minio:9000
-      - S3_ACCESS_KEY_ID=minioadmin
-      - S3_SECRET_ACCESS_KEY=minioadmin123
-      - REDIS_URL=redis://redis:6379
+    env_file:
+      - ../../development.env
     ports:
       - "8000:8000"
     volumes:
@@ -476,8 +484,12 @@ services:
 
   # Airflow for workflow orchestration
   airflow:
-    image: apache/airflow:2.7.3-python3.11
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.airflow
     container_name: metrify-airflow
+    env_file:
+      - ../../development.env
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://metrify_dev:dev_password@postgres:5432/metrify_dev
@@ -487,14 +499,16 @@ services:
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
       AIRFLOW__WEBSERVER__EXPOSE_HOSTNAME: 'true'
       AIRFLOW__WEBSERVER__EXPOSE_STACKTRACE: 'true'
-      AIRFLOW__CORE__FERNET_KEY: 'your-fernet-key-here'
+      AIRFLOW__CORE__FERNET_KEY: '34Z9ap-9HSA7_IEXmRLrPg__lAT72vTx8-KGLCo_m8A='
       AIRFLOW__CORE__DEFAULT_TIMEZONE: 'UTC'
       AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE: 'UTC'
     ports:
-      - "8081:8080"
+      - "3200:8080"
     volumes:
       - ../../src/infrastructure/external/airflow/dags:/opt/airflow/dags
       - ../../logs/airflow:/opt/airflow/logs
+      - ../../src:/opt/airflow/src
+      - ../../config:/opt/airflow/config
       - airflow_data:/opt/airflow
     depends_on:
       postgres:
@@ -506,8 +520,117 @@ services:
         airflow db init &&
         airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@metrify.com --password admin &&
         airflow webserver --port 8080 &
-        airflow scheduler
+        airflow scheduler &
+        wait
       "
+
+  # TensorFlow Serving for ML Model Serving
+  tensorflow-serving:
+    image: tensorflow/serving:latest
+    container_name: metrify-tensorflow-serving
+    environment:
+      MODEL_NAME: consumption_forecasting
+      MODEL_BASE_PATH: /models
+    ports:
+      - "8500:8500"  # gRPC
+      - "8501:8501"  # REST API
+    volumes:
+      - ../../models:/models
+      - tensorflow_serving_data:/models
+    networks:
+      - metrify-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Model Gateway for ML API
+  model-gateway:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.ml
+    container_name: metrify-model-gateway
+    environment:
+      TENSORFLOW_SERVING_URL: http://tensorflow-serving:8501
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: INFO
+    ports:
+      - "2500:2500"  # Unique port to avoid conflicts
+    depends_on:
+      tensorflow-serving:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - metrify-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2500/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # dbt for data transformations
+  # Snowflake Local Development Container
+  # Snowflake local development - using PostgreSQL for now
+  # For production, use actual Snowflake account
+  # snowflake:
+  #   image: snowflakecomputing/snowflake-local:latest
+  #   container_name: metrify-snowflake
+  #   environment:
+  #     SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT:-local}
+  #     SNOWFLAKE_USER: ${SNOWFLAKE_USER:-admin}
+  #     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD:-password}
+  #     SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE:-ACCOUNTADMIN}
+  #     SNOWFLAKE_DATABASE: ${SNOWFLAKE_DATABASE:-METRIFY}
+  #     SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE:-COMPUTE_WH}
+  #     SNOWFLAKE_SCHEMA: ${SNOWFLAKE_SCHEMA:-PUBLIC}
+  #   ports:
+  #     - "8088:8088"  # Snowflake UI
+  #     - "8089:8089"  # Snowflake API
+  #   volumes:
+  #     - snowflake_data:/var/snowflake
+  #   networks:
+  #     - metrify-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #   restart: unless-stopped
+
+  dbt:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/Dockerfile.dbt
+    container_name: metrify-dbt
+    environment:
+      SNOWFLAKE_ACCOUNT: ${SNOWFLAKE_ACCOUNT:-local}
+      SNOWFLAKE_USER: ${SNOWFLAKE_USER:-admin}
+      SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD:-password}
+      SNOWFLAKE_ROLE: ${SNOWFLAKE_ROLE:-ACCOUNTADMIN}
+      SNOWFLAKE_DATABASE: ${SNOWFLAKE_DATABASE:-METRIFY}
+      SNOWFLAKE_WAREHOUSE: ${SNOWFLAKE_WAREHOUSE:-COMPUTE_WH}
+      DBT_SCHEMA: ${DBT_SCHEMA:-RAW}
+      DBT_ENVIRONMENT: ${DBT_ENVIRONMENT:-development}
+    volumes:
+      - ../../dbt:/dbt
+      - dbt_data:/dbt/target
+    working_dir: /dbt
+    networks:
+      - metrify-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      bash -c "
+        dbt deps &&
+        dbt debug &&
+        dbt run --target dev
+      "
+    restart: unless-stopped
 
 # Volumes
 volumes:
@@ -536,6 +659,12 @@ volumes:
   jupyter_data:
     driver: local
   elasticsearch_data:
+    driver: local
+  tensorflow_serving_data:
+    driver: local
+  snowflake_data:
+    driver: local
+  dbt_data:
     driver: local
 
 # Networks

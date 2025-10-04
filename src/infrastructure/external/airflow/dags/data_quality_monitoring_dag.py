@@ -7,7 +7,19 @@ from datetime import datetime, timedelta
 from typing import Dict, Any
 import logging
 
-from ..airflow_client import AirflowClient
+import sys
+import os
+
+# Add /opt/airflow to path so we can import from src.infrastructure...
+if "/opt/airflow" not in sys.path:
+    sys.path.insert(0, "/opt/airflow")
+
+# For local development, add the project root src directory
+local_src = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "src")
+if os.path.exists(local_src) and local_src not in sys.path:
+    sys.path.insert(0, local_src)
+
+from src.infrastructure.external.airflow.airflow_client import AirflowClient
 
 logger = logging.getLogger(__name__)
 

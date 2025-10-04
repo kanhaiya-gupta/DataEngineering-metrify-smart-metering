@@ -12,16 +12,46 @@ try:
     from airflow import DAG
     from airflow.operators.python import PythonOperator
     from airflow.operators.bash import BashOperator
-    from airflow.operators.dummy import DummyOperator
+    from airflow.operators.empty import EmptyOperator as DummyOperator
     from airflow.sensors.filesystem import FileSensor
-    from airflow.sensors.sql import SqlSensor
-    from airflow.providers.postgres.operators.postgres import PostgresOperator
-    from airflow.providers.amazon.aws.operators.s3 import S3FileTransformOperator
-    from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
-    from airflow.providers.apache.kafka.operators.produce import ProduceToTopicOperator
-    from airflow.providers.apache.kafka.sensors.kafka import KafkaTopicSensor
     from airflow.models import Variable
-    from airflow.utils.dates import days_ago
+    from airflow.utils.task_group import TaskGroup
+    from airflow.hooks.base import BaseHook
+    from airflow.exceptions import AirflowException
+    from datetime import datetime, timedelta
+    
+    # Optional provider imports (may not be installed)
+    try:
+        from airflow.sensors.sql import SqlSensor
+    except ImportError:
+        SqlSensor = None
+    
+    try:
+        from airflow.providers.postgres.operators.postgres import PostgresOperator
+    except ImportError:
+        PostgresOperator = None
+    
+    try:
+        from airflow.providers.amazon.aws.operators.s3 import S3FileTransformOperator
+    except ImportError:
+        S3FileTransformOperator = None
+    
+    try:
+        from airflow.providers.snowflake.operators.snowflake import SnowflakeSqlApiOperator as SnowflakeOperator
+    except ImportError:
+        SnowflakeOperator = None
+    
+    try:
+        from airflow.providers.apache.kafka.operators.produce import ProduceToTopicOperator
+    except ImportError:
+        ProduceToTopicOperator = None
+    
+    try:
+        from airflow.providers.apache.kafka.sensors.kafka import KafkaTopicSensor
+    except ImportError:
+        KafkaTopicSensor = None
+    
+    AIRFLOW_AVAILABLE = True
 except ImportError:
     DAG = None
     PythonOperator = None
@@ -35,7 +65,10 @@ except ImportError:
     ProduceToTopicOperator = None
     KafkaTopicSensor = None
     Variable = None
-    days_ago = None
+    TaskGroup = None
+    BaseHook = None
+    AirflowException = None
+    AIRFLOW_AVAILABLE = False
 
 from ....core.exceptions.domain_exceptions import InfrastructureError
 
@@ -55,13 +88,13 @@ class AirflowClient:
         max_active_runs: int = 1,
         catchup: bool = False
     ):
-        if DAG is None:
+        if not AIRFLOW_AVAILABLE:
             raise InfrastructureError("Apache Airflow not installed", service="airflow")
         
         self.default_args = default_args or {
             'owner': 'metrify-data-team',
             'depends_on_past': False,
-            'start_date': days_ago(1) if days_ago else datetime(2024, 1, 1),
+            'start_date': datetime(2024, 1, 1),
             'email_on_failure': True,
             'email_on_retry': False,
             'retries': 1,
@@ -93,15 +126,22 @@ class AirflowClient:
             Created DAG object
         """
         try:
+            # Remove duplicate parameters from kwargs to avoid conflicts
+            dag_kwargs = kwargs.copy()
+            duplicate_params = ['max_active_runs', 'catchup', 'schedule_interval', 'default_args', 'tags']
+            for param in duplicate_params:
+                if param in dag_kwargs:
+                    del dag_kwargs[param]
+            
             dag = DAG(
                 dag_id=dag_id,
                 description=description,
                 default_args=self.default_args,
-                schedule_interval=schedule_interval,
+                schedule=schedule_interval,  # Changed from schedule_interval to schedule
                 max_active_runs=self.max_active_runs,
                 catchup=self.catchup,
                 tags=tags or [],
-                **kwargs
+                **dag_kwargs
             )
             
             self._dags[dag_id] = dag
@@ -208,6 +248,9 @@ class AirflowClient:
             Created PostgresOperator
         """
         try:
+            if PostgresOperator is None:
+                raise InfrastructureError("PostgresOperator not available. Please install apache-airflow-providers-postgres", service="airflow")
+            
             task = PostgresOperator(
                 task_id=task_id,
                 sql=sql,
@@ -247,6 +290,9 @@ class AirflowClient:
             Created S3FileTransformOperator
         """
         try:
+            if S3FileTransformOperator is None:
+                raise InfrastructureError("S3FileTransformOperator not available. Please install apache-airflow-providers-amazon", service="airflow")
+            
             task = S3FileTransformOperator(
                 task_id=task_id,
                 source_s3_key=source_s3_key,
@@ -285,6 +331,9 @@ class AirflowClient:
             Created SnowflakeOperator
         """
         try:
+            if SnowflakeOperator is None:
+                raise InfrastructureError("SnowflakeOperator not available. Please install apache-airflow-providers-snowflake", service="airflow")
+            
             task = SnowflakeOperator(
                 task_id=task_id,
                 sql=sql,
@@ -324,6 +373,9 @@ class AirflowClient:
             Created ProduceToTopicOperator
         """
         try:
+            if ProduceToTopicOperator is None:
+                raise InfrastructureError("ProduceToTopicOperator not available. Please install apache-airflow-providers-apache-kafka", service="airflow")
+            
             task = ProduceToTopicOperator(
                 task_id=task_id,
                 topic=topic,
