@@ -287,8 +287,8 @@ class ConfigLoader:
     def get_s3_config(self) -> S3Config:
         """Get S3 configuration"""
         return S3Config(
-            access_key_id=os.getenv('S3_ACCESS_KEY_ID', ''),
-            secret_access_key=os.getenv('S3_SECRET_ACCESS_KEY', ''),
+            access_key_id=os.getenv('AWS_ACCESS_KEY_ID', ''),
+            secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY', ''),
             default_region=os.getenv('S3_REGION', 'eu-central-1'),
             bucket=os.getenv('S3_BUCKET_NAME', 'metrify-data-lake'),
             prefix=os.getenv('S3_UPLOAD_PREFIX', 'data/uploads/'),

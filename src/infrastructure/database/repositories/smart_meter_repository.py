@@ -256,11 +256,10 @@ class SmartMeterRepository(ISmartMeterRepository):
             specifications=specifications,
             status=model.status,
             quality_tier=model.quality_tier,
-            installed_at=model.installed_at,
+            installed_at=getattr(model, 'installed_at', None),
             last_reading_at=model.last_reading_at,
-            firmware_version=model.firmware_version,
-            metadata=model.metadata or {},
-            version=model.version
+            firmware_version=getattr(model, 'firmware_version', None),
+            metadata=getattr(model, 'metadata', {}),
         )
     
     def _entity_to_model(self, meter: SmartMeter) -> SmartMeterModel:
@@ -272,14 +271,13 @@ class SmartMeterRepository(ISmartMeterRepository):
             address=meter.location.address,
             manufacturer=meter.specifications.manufacturer,
             model=meter.specifications.model,
-            installation_date=datetime.fromisoformat(meter.specifications.installation_date),
+            installation_date=datetime.fromisoformat(meter.specifications.installation_date) if meter.specifications.installation_date else None,
             status=meter.status,
             quality_tier=meter.quality_tier,
-            installed_at=meter.installed_at,
+            installed_at=getattr(meter, 'installed_at', None),
             last_reading_at=meter.last_reading_at,
-            firmware_version=meter.firmware_version,
-            metadata=meter.metadata,
-            version=meter.version
+            firmware_version=getattr(meter, 'firmware_version', None),
+            metadata=getattr(meter, 'metadata', {}),
         )
     
     def _update_model_from_entity(self, model: SmartMeterModel, meter: SmartMeter) -> None:
@@ -289,14 +287,13 @@ class SmartMeterRepository(ISmartMeterRepository):
         model.address = meter.location.address
         model.manufacturer = meter.specifications.manufacturer
         model.model = meter.specifications.model
-        model.installation_date = datetime.fromisoformat(meter.specifications.installation_date)
+        model.installation_date = datetime.fromisoformat(meter.specifications.installation_date) if meter.specifications.installation_date else None
         model.status = meter.status
         model.quality_tier = meter.quality_tier
-        model.installed_at = meter.installed_at
+        model.installed_at = getattr(meter, 'installed_at', None)
         model.last_reading_at = meter.last_reading_at
-        model.firmware_version = meter.firmware_version
-        model.metadata = meter.metadata
-        model.version = meter.version
+        model.firmware_version = getattr(meter, 'firmware_version', None)
+        model.metadata = getattr(meter, 'metadata', {})
         model.updated_at = datetime.utcnow()
     
     def _reading_model_to_entity(self, model: SmartMeterReadingModel) -> MeterReading:
@@ -323,7 +320,7 @@ class SmartMeterRepository(ISmartMeterRepository):
                 event_type=event.__class__.__name__,
                 event_data=event.to_dict(),
                 occurred_at=event.occurred_at,
-                aggregate_version=meter.version,
+                aggregate_version=1,
                 event_version=1
             )
             self.db_session.add(event_model)

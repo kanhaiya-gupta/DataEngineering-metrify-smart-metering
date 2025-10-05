@@ -2,7 +2,7 @@
 -- Transforms raw smart meter data into a clean, consistent format
 
 with source_data as (
-    select * from {{ source('raw', 'smart_meter_readings') }}
+    select * from {{ source('processed', 'smart_meter_readings') }}
 ),
 
 cleaned_data as (

@@ -1,13 +1,13 @@
 version: 2
 
 sources:
-  - name: raw
-    description: "Raw data from various sources"
+  - name: processed
+    description: "Processed data from Spark ETL pipeline"
     database: "{{ env_var('SNOWFLAKE_DATABASE', 'METRIFY_OPERATIONAL') }}"
-    schema: "{{ env_var('DBT_SCHEMA', 'RAW') }}"
+    schema: "{{ env_var('DBT_SCHEMA', 'PROCESSED') }}"
     tables:
       - name: smart_meter_readings
-        description: "Raw smart meter readings from Kafka ingestion"
+        description: "Processed smart meter readings from Spark ETL pipeline"
         columns:
           - name: reading_id
             description: "Unique identifier for each reading"
@@ -73,8 +73,8 @@ sources:
           - name: updated_at
             description: "Record last update timestamp"
 
-      - name: grid_status_updates
-        description: "Raw grid status updates from operators"
+      - name: grid_operator_data
+        description: "Processed grid operator data from Spark ETL pipeline"
         columns:
           - name: status_id
             description: "Unique identifier for each status update"
@@ -114,8 +114,8 @@ sources:
           - name: updated_at
             description: "Record last update timestamp"
 
-      - name: weather_observations
-        description: "Raw weather observations from stations"
+      - name: weather_station_data
+        description: "Processed weather station data from Spark ETL pipeline"
         columns:
           - name: observation_id
             description: "Unique identifier for each observation"

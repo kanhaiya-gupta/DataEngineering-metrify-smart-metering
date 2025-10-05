@@ -44,16 +44,12 @@ class S3Client:
     async def connect(self) -> None:
         """Connect to S3 service"""
         try:
-            # Use IAM role if no access keys provided, otherwise use provided credentials
-            if self.aws_access_key_id and self.aws_secret_access_key:
-                session = boto3.Session(
-                    aws_access_key_id=self.aws_access_key_id,
-                    aws_secret_access_key=self.aws_secret_access_key,
-                    region_name=self.region_name
-                )
-            else:
-                # Use IAM role or default credentials
-                session = boto3.Session(region_name=self.region_name)
+            # Use provided AWS credentials
+            session = boto3.Session(
+                aws_access_key_id=self.aws_access_key_id,
+                aws_secret_access_key=self.aws_secret_access_key,
+                region_name=self.region_name
+            )
             
             self._s3_client = session.client(
                 's3',
@@ -494,10 +490,29 @@ class S3Client:
             logger.error(f"Failed to get metrics: {str(e)}")
             return {"connected": self._is_connected, "error": str(e)}
     
+    async def disconnect(self) -> None:
+        """Disconnect from S3 service"""
+        try:
+            if self._s3_client:
+                # boto3 clients don't need explicit disconnection
+                self._s3_client = None
+            self._is_connected = False
+            logger.info("Disconnected from S3")
+        except Exception as e:
+            logger.error(f"Error disconnecting from S3: {e}")
+
     async def health_check(self) -> bool:
         """Perform health check on S3 connection"""
         try:
+            # Check if credentials are available
+            if not self.aws_access_key_id or not self.aws_secret_access_key:
+                logger.info("S3 credentials not configured, skipping health check")
+                return False  # Not healthy, but not an error
+            
             await self.connect()
+            if not self._is_connected:
+                return False
+                
             # Try to list objects to verify connection
             self._s3_client.list_objects_v2(
                 Bucket=self.bucket_name,

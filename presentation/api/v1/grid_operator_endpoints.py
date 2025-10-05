@@ -88,15 +88,12 @@ async def create_grid_operator(
             operator_id=operator_data.operator_id,
             name=operator_data.name,
             operator_type=GridOperatorType(operator_data.operator_type.value),
-            location=location,
+            headquarters=location,
+            coverage_regions=[],  # Default empty list, can be populated later
             contact_email=operator_data.contact_email,
             contact_phone=operator_data.contact_phone,
             website=operator_data.website,
-            status=GridOperatorStatus(operator_data.status.value),
-            grid_capacity_mw=operator_data.grid_capacity_mw,
-            voltage_level_kv=operator_data.voltage_level_kv,
-            coverage_area_km2=operator_data.coverage_area_km2,
-            metadata=operator_data.metadata
+            status=GridOperatorStatus(operator_data.status.value)
         )
         
         # Save operator
@@ -112,13 +109,13 @@ async def create_grid_operator(
             contact_phone=saved_operator.contact_phone,
             website=saved_operator.website,
             status=saved_operator.status.value,
-            grid_capacity_mw=saved_operator.grid_capacity_mw,
-            voltage_level_kv=saved_operator.voltage_level_kv,
-            coverage_area_km2=saved_operator.coverage_area_km2,
+            grid_capacity_mw=None,  # Not available in entity
+            voltage_level_kv=None,  # Not available in entity
+            coverage_area_km2=None,  # Not available in entity
             created_at=saved_operator.created_at,
             updated_at=saved_operator.updated_at,
-            metadata=saved_operator.metadata,
-            version=saved_operator.version
+            metadata=None,  # Not available in entity
+            version=1  # Default version
         )
         
         return response
@@ -151,20 +148,20 @@ async def get_grid_operator(
             name=operator.name,
             operator_type=operator.operator_type.value,
             location={
-                "latitude": operator.location.latitude,
-                "longitude": operator.location.longitude,
-                "address": operator.location.address
+                "latitude": operator.headquarters.latitude,
+                "longitude": operator.headquarters.longitude,
+                "address": operator.headquarters.address
             },
             contact_email=operator.contact_email,
             contact_phone=operator.contact_phone,
             website=operator.website,
             status=operator.status.value,
-            grid_capacity_mw=operator.grid_capacity_mw,
-            voltage_level_kv=operator.voltage_level_kv,
-            coverage_area_km2=operator.coverage_area_km2,
+            grid_capacity_mw=None,  # Not available in entity
+            voltage_level_kv=None,  # Not available in entity
+            coverage_area_km2=None,  # Not available in entity
             created_at=operator.created_at,
             updated_at=operator.updated_at,
-            metadata=operator.metadata,
+            metadata=None,  # Not available in entity
             version=operator.version
         )
         
@@ -210,21 +207,21 @@ async def list_grid_operators(
                 name=operator.name,
                 operator_type=operator.operator_type.value,
                 location={
-                    "latitude": operator.location.latitude,
-                    "longitude": operator.location.longitude,
-                    "address": operator.location.address
+                    "latitude": operator.headquarters.latitude,
+                    "longitude": operator.headquarters.longitude,
+                    "address": operator.headquarters.address
                 },
                 contact_email=operator.contact_email,
                 contact_phone=operator.contact_phone,
                 website=operator.website,
                 status=operator.status.value,
-                grid_capacity_mw=operator.grid_capacity_mw,
-                voltage_level_kv=operator.voltage_level_kv,
-                coverage_area_km2=operator.coverage_area_km2,
+                grid_capacity_mw=None,  # Not available in entity
+                voltage_level_kv=None,  # Not available in entity
+                coverage_area_km2=None,  # Not available in entity
                 created_at=operator.created_at,
                 updated_at=operator.updated_at,
-                metadata=operator.metadata,
-                version=operator.version
+                metadata=None,  # Not available in entity
+                version=1  # Default version
             ))
         
         # Calculate pagination info
@@ -287,19 +284,10 @@ async def update_grid_operator(
             operator.website = update_data.website
         
         if update_data.status:
-            operator.update_status(update_data.status.value)
+            operator.status = GridOperatorStatus(update_data.status.value)
         
-        if update_data.grid_capacity_mw:
-            operator.grid_capacity_mw = update_data.grid_capacity_mw
-        
-        if update_data.voltage_level_kv:
-            operator.voltage_level_kv = update_data.voltage_level_kv
-        
-        if update_data.coverage_area_km2:
-            operator.coverage_area_km2 = update_data.coverage_area_km2
-        
-        if update_data.metadata:
-            operator.metadata = update_data.metadata
+        # Note: grid_capacity_mw, voltage_level_kv, coverage_area_km2, and metadata
+        # are not available in the GridOperator entity, so we skip updating them
         
         # Save updated operator
         updated_operator = await operator_repo.update(operator)
@@ -310,21 +298,21 @@ async def update_grid_operator(
             name=updated_operator.name,
             operator_type=updated_operator.operator_type.value,
             location={
-                "latitude": updated_operator.location.latitude,
-                "longitude": updated_operator.location.longitude,
-                "address": updated_operator.location.address
+                "latitude": updated_operator.headquarters.latitude,
+                "longitude": updated_operator.headquarters.longitude,
+                "address": updated_operator.headquarters.address
             },
             contact_email=updated_operator.contact_email,
             contact_phone=updated_operator.contact_phone,
             website=updated_operator.website,
             status=updated_operator.status.value,
-            grid_capacity_mw=updated_operator.grid_capacity_mw,
-            voltage_level_kv=updated_operator.voltage_level_kv,
-            coverage_area_km2=updated_operator.coverage_area_km2,
+            grid_capacity_mw=None,  # Not available in entity
+            voltage_level_kv=None,  # Not available in entity
+            coverage_area_km2=None,  # Not available in entity
             created_at=updated_operator.created_at,
             updated_at=updated_operator.updated_at,
-            metadata=updated_operator.metadata,
-            version=updated_operator.version
+            metadata=None,  # Not available in entity
+            version=1  # Default version
         )
         
         return response

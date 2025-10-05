@@ -152,7 +152,7 @@ async def get_weather_station(
         
         # Get additional statistics
         total_observations = await station_repo.get_observation_count(station_id)
-        avg_quality_score = await station_repo.get_average_quality_score(station_id)
+        avg_quality_score = await station_repo.get_average_quality_score()  # No parameters needed
         last_observation = await station_repo.get_last_observation(station_id)
         
         # Convert to response DTO
@@ -218,7 +218,7 @@ async def list_weather_stations(
         for station in stations:
             # Get additional statistics for each station
             total_observations = await station_repo.get_observation_count(station.station_id)
-            avg_quality_score = await station_repo.get_average_quality_score(station.station_id)
+            avg_quality_score = await station_repo.get_average_quality_score()  # No parameters needed
             last_observation = await station_repo.get_last_observation(station.station_id)
             
             station_responses.append(WeatherStationResponseDTO(

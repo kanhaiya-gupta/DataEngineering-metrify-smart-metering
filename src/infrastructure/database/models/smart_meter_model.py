@@ -36,7 +36,7 @@ class SmartMeterModel(Base):
     # Meter specifications
     manufacturer = Column(String(255), nullable=False)
     model = Column(String(255), nullable=False)
-    installation_date = Column(DateTime, nullable=False)
+    installation_date = Column(DateTime, nullable=True)
     
     # Status and quality
     status = Column(SQLEnum(MeterStatus), nullable=False, default=MeterStatus.ACTIVE)
@@ -80,7 +80,7 @@ class SmartMeterModel(Base):
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "firmware_version": self.firmware_version,
-            "metadata": self.metadata,
+            "metadata": self.meter_metadata,
             "version": self.version
         }
 

@@ -83,6 +83,14 @@ class GridOperator:
         """Clear domain events after they've been processed"""
         self._domain_events.clear()
     
+    def get_uncommitted_events(self) -> List:
+        """Get uncommitted domain events (alias for domain_events)"""
+        return self._domain_events.copy()
+    
+    def clear_uncommitted_events(self) -> None:
+        """Clear uncommitted domain events (alias for clear_domain_events)"""
+        self._domain_events.clear()
+    
     def add_domain_event(self, event) -> None:
         """Add a domain event"""
         self._domain_events.append(event)

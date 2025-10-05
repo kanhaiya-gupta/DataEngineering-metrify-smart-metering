@@ -242,7 +242,7 @@ class GridOperatorRepository(IGridOperatorRepository):
             operator_id=model.operator_id,
             name=model.name,
             operator_type=model.operator_type,
-            location=location,
+            headquarters=location,
             contact_email=model.contact_email,
             contact_phone=model.contact_phone,
             website=model.website,
@@ -251,7 +251,6 @@ class GridOperatorRepository(IGridOperatorRepository):
             voltage_level_kv=model.voltage_level_kv,
             coverage_area_km2=model.coverage_area_km2,
             metadata=model.metadata or {},
-            version=model.version
         )
     
     def _entity_to_model(self, operator: GridOperator) -> GridOperatorModel:
@@ -259,37 +258,35 @@ class GridOperatorRepository(IGridOperatorRepository):
         return GridOperatorModel(
             operator_id=operator.operator_id,
             name=operator.name,
-            operator_type=operator.operator_type,
-            latitude=operator.location.latitude,
-            longitude=operator.location.longitude,
-            address=operator.location.address,
+            operator_type=operator.operator_type.value if hasattr(operator.operator_type, 'value') else str(operator.operator_type),
+            latitude=operator.headquarters.latitude,
+            longitude=operator.headquarters.longitude,
+            address=operator.headquarters.address,
             contact_email=operator.contact_email,
             contact_phone=operator.contact_phone,
             website=operator.website,
             status=operator.status,
-            grid_capacity_mw=operator.grid_capacity_mw,
-            voltage_level_kv=operator.voltage_level_kv,
-            coverage_area_km2=operator.coverage_area_km2,
-            metadata=operator.metadata,
-            version=operator.version
+            grid_capacity_mw=getattr(operator, 'grid_capacity_mw', None),
+            voltage_level_kv=getattr(operator, 'voltage_level_kv', None),
+            coverage_area_km2=getattr(operator, 'coverage_area_km2', None),
+            metadata=getattr(operator, 'metadata', {}),
         )
     
     def _update_model_from_entity(self, model: GridOperatorModel, operator: GridOperator) -> None:
         """Update model from entity"""
         model.name = operator.name
-        model.operator_type = operator.operator_type
-        model.latitude = operator.location.latitude
-        model.longitude = operator.location.longitude
-        model.address = operator.location.address
+        model.operator_type = operator.operator_type.value if hasattr(operator.operator_type, 'value') else str(operator.operator_type)
+        model.latitude = operator.headquarters.latitude
+        model.longitude = operator.headquarters.longitude
+        model.address = operator.headquarters.address
         model.contact_email = operator.contact_email
         model.contact_phone = operator.contact_phone
         model.website = operator.website
         model.status = operator.status
-        model.grid_capacity_mw = operator.grid_capacity_mw
-        model.voltage_level_kv = operator.voltage_level_kv
-        model.coverage_area_km2 = operator.coverage_area_km2
-        model.metadata = operator.metadata
-        model.version = operator.version
+        model.grid_capacity_mw = getattr(operator, 'grid_capacity_mw', None)
+        model.voltage_level_kv = getattr(operator, 'voltage_level_kv', None)
+        model.coverage_area_km2 = getattr(operator, 'coverage_area_km2', None)
+        model.metadata = getattr(operator, 'metadata', {})
         model.updated_at = datetime.utcnow()
     
     def _status_model_to_entity(self, model: GridStatusModel) -> GridStatus:
@@ -319,7 +316,7 @@ class GridOperatorRepository(IGridOperatorRepository):
                 event_type=event.__class__.__name__,
                 event_data=event.to_dict(),
                 occurred_at=event.occurred_at,
-                aggregate_version=operator.version,
+                aggregate_version=1,
                 event_version=1
             )
             self.db_session.add(event_model)

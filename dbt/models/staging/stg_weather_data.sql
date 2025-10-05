@@ -2,7 +2,7 @@
 -- Transforms raw weather data into a clean, consistent format
 
 with source_data as (
-    select * from {{ source('raw', 'weather_observations') }}
+    select * from {{ source('processed', 'weather_station_data') }}
 ),
 
 cleaned_data as (

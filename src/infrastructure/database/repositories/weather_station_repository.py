@@ -251,7 +251,6 @@ class WeatherStationRepository(IWeatherStationRepository):
             total_observations=model.total_observations,
             average_quality_score=model.average_quality_score,
             last_observation_at=model.last_observation_at,
-            version=model.version
         )
     
     def _entity_to_model(self, station: WeatherStation) -> WeatherStationModel:
@@ -259,7 +258,7 @@ class WeatherStationRepository(IWeatherStationRepository):
         return WeatherStationModel(
             station_id=station.station_id,
             name=station.name,
-            station_type=station.station_type,
+            station_type=station.station_type.value if hasattr(station.station_type, 'value') else str(station.station_type),
             latitude=station.location.latitude,
             longitude=station.location.longitude,
             address=station.location.address,
@@ -270,13 +269,12 @@ class WeatherStationRepository(IWeatherStationRepository):
             total_observations=station.total_observations,
             average_quality_score=station.average_quality_score,
             last_observation_at=station.last_observation_at,
-            version=station.version
         )
     
     def _update_model_from_entity(self, model: WeatherStationModel, station: WeatherStation) -> None:
         """Update model from entity"""
         model.name = station.name
-        model.station_type = station.station_type
+        model.station_type = station.station_type.value if hasattr(station.station_type, 'value') else str(station.station_type)
         model.latitude = station.location.latitude
         model.longitude = station.location.longitude
         model.address = station.location.address
@@ -287,7 +285,6 @@ class WeatherStationRepository(IWeatherStationRepository):
         model.total_observations = station.total_observations
         model.average_quality_score = station.average_quality_score
         model.last_observation_at = station.last_observation_at
-        model.version = station.version
         model.updated_at = datetime.utcnow()
     
     def _observation_model_to_entity(self, model: WeatherObservationModel) -> WeatherObservation:
@@ -314,7 +311,7 @@ class WeatherStationRepository(IWeatherStationRepository):
                 event_type=event.__class__.__name__,
                 event_data=event.to_dict(),
                 occurred_at=event.occurred_at,
-                aggregate_version=station.version,
+                aggregate_version=1,
                 event_version=1
             )
             self.db_session.add(event_model)
@@ -460,3 +457,12 @@ class WeatherStationRepository(IWeatherStationRepository):
             }
         except Exception as e:
             raise DataQualityError(f"Failed to get daily stats: {str(e)}")
+    
+    async def get_observation_count(self, station_id: str) -> int:
+        """Get count of observations for a specific station"""
+        try:
+            return self.db_session.query(WeatherObservationModel).filter(
+                WeatherObservationModel.station_id == station_id
+            ).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get observation count: {str(e)}")

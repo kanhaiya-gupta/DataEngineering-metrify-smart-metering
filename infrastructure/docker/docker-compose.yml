@@ -546,6 +546,41 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # Apache Spark for ETL Processing
+  spark:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.spark
+    container_name: metrify-spark
+    env_file:
+      - ../../development.env
+    environment:
+      SPARK_APP_NAME: metrify-spark-etl
+      SPARK_MASTER: local[*]
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_EXECUTOR_MEMORY: 2g
+      SPARK_EXECUTOR_CORES: 2
+      PYTHONPATH: /opt/spark/src:/opt/spark/config
+    ports:
+      - "4040:4040"  # Spark UI
+      - "7077:7077"  # Spark Master
+    volumes:
+      - ../../src:/opt/spark/src
+      - ../../config:/opt/spark/config
+      - ../../data:/opt/spark/data
+      - spark_data:/opt/spark/data
+    networks:
+      - metrify-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4040"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+
   # Model Gateway for ML API
   model-gateway:
     build:
@@ -651,6 +686,8 @@ volumes:
   grafana_data:
     driver: local
   airflow_data:
+    driver: local
+  spark_data:
     driver: local
   atlas_data:
     driver: local

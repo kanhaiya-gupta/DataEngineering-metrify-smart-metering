@@ -2,7 +2,7 @@
 -- Transforms raw grid status data into a clean, consistent format
 
 with source_data as (
-    select * from {{ source('raw', 'grid_status_updates') }}
+    select * from {{ source('processed', 'grid_operator_data') }}
 ),
 
 cleaned_data as (

@@ -406,6 +406,11 @@ open http://localhost:8000/docs
 - **[Technical Implementation](roadmap/initiatives/spark-etl-integration/technical-implementation.md)** - Technical architecture and implementation details
 - **[Migration Strategy](roadmap/initiatives/spark-etl-integration/migration-strategy.md)** - Migration approach and rollout plan
 
+### 🤖 ML & Analytics Snowflake Integration
+- **[ML-Snowflake Overview](roadmap/initiatives/ml-snowflake-integration/README.md)** - ML and Analytics integration with Snowflake initiative
+- **[Technical Implementation](roadmap/initiatives/ml-snowflake-integration/technical-implementation.md)** - Technical architecture for ML/Analytics Snowflake integration
+- **[Migration Strategy](roadmap/initiatives/ml-snowflake-integration/migration-strategy.md)** - Migration strategy from PostgreSQL to Snowflake for ML/Analytics
+
 ### 🤖 Machine Learning & AI
 - **[ML Overview](docs/ml/ml-overview.md)** - Machine learning capabilities and architecture
 - **[Model Training](docs/ml/model-training.md)** - ML model development and training
@@ -467,6 +472,7 @@ open http://localhost:8000/docs
 - Review [Data Quality](docs/quality/quality-overview.md)
 - Explore [dbt Transformations](dbt/README.md)
 - Plan [Spark ETL Integration](roadmap/initiatives/spark-etl-integration/README.md)
+- Integrate [ML & Analytics with Snowflake](roadmap/initiatives/ml-snowflake-integration/README.md)
 - Master [Advanced Analytics](docs/analytics/analytics-overview.md)
 
 ### For ML Engineers
@@ -474,6 +480,7 @@ open http://localhost:8000/docs
 - Learn [Model Training](docs/ml/model-training.md)
 - Deploy [Model Serving](docs/ml/model-deployment.md)
 - Monitor [ML Performance](docs/ml/ml-monitoring.md)
+- Integrate [ML with Snowflake](roadmap/initiatives/ml-snowflake-integration/README.md)
 
 ### For Data Governance Teams
 - Understand [Governance Framework](docs/governance/governance-overview.md)

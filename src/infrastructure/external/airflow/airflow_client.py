@@ -7,16 +7,18 @@ import json
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import logging
+import aiohttp
+import asyncio
 
 try:
     from airflow import DAG
-    from airflow.operators.python import PythonOperator
-    from airflow.operators.bash import BashOperator
-    from airflow.operators.empty import EmptyOperator as DummyOperator
-    from airflow.sensors.filesystem import FileSensor
+    from airflow.providers.standard.operators.python import PythonOperator
+    from airflow.providers.standard.operators.bash import BashOperator
+    from airflow.providers.standard.operators.empty import EmptyOperator as DummyOperator
+    from airflow.providers.standard.sensors.filesystem import FileSensor
     from airflow.models import Variable
-    from airflow.utils.task_group import TaskGroup
-    from airflow.hooks.base import BaseHook
+    from airflow.sdk import TaskGroup
+    from airflow.sdk.bases.hook import BaseHook
     from airflow.exceptions import AirflowException
     from datetime import datetime, timedelta
     
@@ -84,6 +86,9 @@ class AirflowClient:
     
     def __init__(
         self,
+        base_url: str = "http://localhost:3200",
+        username: str = "admin",
+        password: str = "admin",
         default_args: Optional[Dict[str, Any]] = None,
         max_active_runs: int = 1,
         catchup: bool = False
@@ -91,6 +96,13 @@ class AirflowClient:
         if not AIRFLOW_AVAILABLE:
             raise InfrastructureError("Apache Airflow not installed", service="airflow")
         
+        # REST API configuration
+        self.base_url = base_url.rstrip('/')
+        self.username = username
+        self.password = password
+        self._session = None
+        
+        # DAG creation configuration
         self.default_args = default_args or {
             'owner': 'metrify-data-team',
             'depends_on_past': False,
@@ -103,6 +115,54 @@ class AirflowClient:
         self.max_active_runs = max_active_runs
         self.catchup = catchup
         self._dags = {}
+    
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Get or create HTTP session for Airflow REST API"""
+        if self._session is None or self._session.closed:
+            auth = aiohttp.BasicAuth(self.username, self.password)
+            self._session = aiohttp.ClientSession(
+                auth=auth,
+                headers={'Content-Type': 'application/json'},
+                timeout=aiohttp.ClientTimeout(total=30)
+            )
+        return self._session
+    
+    async def _close_session(self) -> None:
+        """Close HTTP session"""
+        if self._session and not self._session.closed:
+            await self._session.close()
+    
+    async def __aenter__(self):
+        """Async context manager entry"""
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit - cleanup session"""
+        await self._close_session()
+    
+    async def connect(self) -> None:
+        """Connect to Airflow REST API"""
+        try:
+            # Test connection by getting session
+            session = await self._get_session()
+            # Test with a simple health check
+            health_url = f"{self.base_url}/health"
+            async with session.get(health_url) as response:
+                if response.status == 200:
+                    logger.info(f"Connected to Airflow at {self.base_url}")
+                else:
+                    logger.warning(f"Airflow health check returned status {response.status}")
+        except Exception as e:
+            logger.error(f"Failed to connect to Airflow: {str(e)}")
+            raise InfrastructureError(f"Failed to connect to Airflow: {str(e)}", service="airflow")
+    
+    async def disconnect(self) -> None:
+        """Disconnect from Airflow REST API"""
+        try:
+            await self._close_session()
+            logger.info("Disconnected from Airflow")
+        except Exception as e:
+            logger.error(f"Error disconnecting from Airflow: {e}")
     
     def create_dag(
         self,
@@ -534,3 +594,96 @@ class AirflowClient:
             "tags": dag.tags,
             "task_count": len(dag.tasks)
         }
+    
+    async def health_check(self) -> bool:
+        """Check if Airflow is healthy and accessible"""
+        try:
+            if not AIRFLOW_AVAILABLE:
+                return False
+            
+            session = await self._get_session()
+            
+            # Check Airflow health endpoint
+            health_url = f"{self.base_url}/health"
+            async with session.get(health_url) as response:
+                if response.status == 200:
+                    health_data = await response.json()
+                    logger.debug(f"Airflow health check successful: {health_data}")
+                    return True
+                else:
+                    logger.warning(f"Airflow health check failed with status {response.status}")
+                    return False
+                    
+        except Exception as e:
+            logger.error(f"Airflow health check failed: {str(e)}")
+            return False
+    
+    async def trigger_dag(self, dag_id: str, conf: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Trigger a DAG run"""
+        try:
+            session = await self._get_session()
+            
+            # Trigger DAG via REST API
+            trigger_url = f"{self.base_url}/api/v1/dags/{dag_id}/dagRuns"
+            payload = {
+                "conf": conf or {},
+                "dag_run_id": f"manual__{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+            }
+            
+            logger.info(f"Triggering DAG {dag_id} via REST API")
+            
+            async with session.post(trigger_url, json=payload) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    logger.info(f"Successfully triggered DAG {dag_id}: {result}")
+                    return {
+                        "run_id": result.get("dag_run_id"),
+                        "dag_id": dag_id,
+                        "state": result.get("state", "queued"),
+                        "conf": conf or {}
+                    }
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Failed to trigger DAG {dag_id}: {response.status} - {error_text}")
+                    raise InfrastructureError(f"Failed to trigger DAG: {response.status} - {error_text}", service="airflow")
+            
+        except Exception as e:
+            logger.error(f"Failed to trigger DAG {dag_id}: {str(e)}")
+            raise InfrastructureError(f"Failed to trigger DAG: {str(e)}", service="airflow")
+    
+    async def get_dag_run_status(self, run_id: str) -> Dict[str, Any]:
+        """Get status of a DAG run"""
+        try:
+            session = await self._get_session()
+            
+            # Get DAG run status via REST API
+            # Note: This requires the DAG ID, but we only have run_id
+            # We'll need to search for the DAG run first
+            search_url = f"{self.base_url}/api/v1/dagRuns"
+            params = {"dag_run_id": run_id}
+            
+            logger.debug(f"Getting status for DAG run {run_id}")
+            
+            async with session.get(search_url, params=params) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    if result.get("dag_runs"):
+                        dag_run = result["dag_runs"][0]
+                        return {
+                            "run_id": dag_run.get("dag_run_id"),
+                            "dag_id": dag_run.get("dag_id"),
+                            "state": dag_run.get("state"),
+                            "start_date": dag_run.get("start_date"),
+                            "end_date": dag_run.get("end_date"),
+                            "duration": dag_run.get("duration")
+                        }
+                    else:
+                        raise InfrastructureError(f"DAG run {run_id} not found", service="airflow")
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Failed to get DAG run status {run_id}: {response.status} - {error_text}")
+                    raise InfrastructureError(f"Failed to get DAG run status: {response.status} - {error_text}", service="airflow")
+            
+        except Exception as e:
+            logger.error(f"Failed to get DAG run status {run_id}: {str(e)}")
+            raise InfrastructureError(f"Failed to get DAG run status: {str(e)}", service="airflow")
