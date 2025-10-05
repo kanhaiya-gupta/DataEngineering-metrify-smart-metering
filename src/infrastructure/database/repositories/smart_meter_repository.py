@@ -6,7 +6,7 @@ Concrete implementation of ISmartMeterRepository using SQLAlchemy
 from typing import List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc
+from sqlalchemy import and_, or_, desc, asc, func
 from sqlalchemy.exc import IntegrityError
 
 from ....core.domain.entities.smart_meter import SmartMeter, MeterReading
@@ -17,7 +17,7 @@ from ....core.domain.enums.meter_status import MeterStatus
 from ....core.domain.enums.quality_tier import QualityTier
 from ....core.interfaces.repositories.smart_meter_repository import ISmartMeterRepository
 from ....core.exceptions.domain_exceptions import MeterNotFoundError, DataQualityError
-from ..models.smart_meter_model import SmartMeterModel, MeterReadingModel, MeterEventModel
+from ..models.smart_meter_model import SmartMeterModel, SmartMeterReadingModel, MeterEventModel
 
 
 class SmartMeterRepository(ISmartMeterRepository):
@@ -139,13 +139,13 @@ class SmartMeterRepository(ISmartMeterRepository):
         end_date: datetime
     ) -> List[MeterReading]:
         """Get meter readings within date range"""
-        models = self.db_session.query(MeterReadingModel).filter(
+        models = self.db_session.query(SmartMeterReadingModel).filter(
             and_(
-                MeterReadingModel.meter_id == meter_id.value,
-                MeterReadingModel.timestamp >= start_date,
-                MeterReadingModel.timestamp <= end_date
+                SmartMeterReadingModel.meter_id == meter_id.value,
+                SmartMeterReadingModel.timestamp >= start_date,
+                SmartMeterReadingModel.timestamp <= end_date
             )
-        ).order_by(asc(MeterReadingModel.timestamp)).all()
+        ).order_by(asc(SmartMeterReadingModel.timestamp)).all()
         
         return [self._reading_model_to_entity(model) for model in models]
     
@@ -153,12 +153,12 @@ class SmartMeterRepository(ISmartMeterRepository):
         """Get recent meter readings"""
         cutoff_time = datetime.utcnow() - timedelta(hours=hours)
         
-        models = self.db_session.query(MeterReadingModel).filter(
+        models = self.db_session.query(SmartMeterReadingModel).filter(
             and_(
-                MeterReadingModel.meter_id == meter_id.value,
-                MeterReadingModel.timestamp >= cutoff_time
+                SmartMeterReadingModel.meter_id == meter_id.value,
+                SmartMeterReadingModel.timestamp >= cutoff_time
             )
-        ).order_by(desc(MeterReadingModel.timestamp)).all()
+        ).order_by(desc(SmartMeterReadingModel.timestamp)).all()
         
         return [self._reading_model_to_entity(model) for model in models]
     
@@ -168,14 +168,14 @@ class SmartMeterRepository(ISmartMeterRepository):
         since: Optional[datetime] = None
     ) -> List[MeterReading]:
         """Get readings above quality threshold"""
-        query = self.db_session.query(MeterReadingModel).filter(
-            MeterReadingModel.data_quality_score >= min_quality
+        query = self.db_session.query(SmartMeterReadingModel).filter(
+            SmartMeterReadingModel.data_quality_score >= min_quality
         )
         
         if since:
-            query = query.filter(MeterReadingModel.timestamp >= since)
+            query = query.filter(SmartMeterReadingModel.timestamp >= since)
         
-        models = query.order_by(desc(MeterReadingModel.timestamp)).all()
+        models = query.order_by(desc(SmartMeterReadingModel.timestamp)).all()
         return [self._reading_model_to_entity(model) for model in models]
     
     async def count_by_status(self, status: MeterStatus) -> int:
@@ -223,7 +223,7 @@ class SmartMeterRepository(ISmartMeterRepository):
             SmartMeterModel.status == MeterStatus.MAINTENANCE
         ).count()
         
-        total_readings = self.db_session.query(MeterReadingModel).count()
+        total_readings = self.db_session.query(SmartMeterReadingModel).count()
         
         avg_quality = await self.get_average_quality_score()
         
@@ -299,7 +299,7 @@ class SmartMeterRepository(ISmartMeterRepository):
         model.version = meter.version
         model.updated_at = datetime.utcnow()
     
-    def _reading_model_to_entity(self, model: MeterReadingModel) -> MeterReading:
+    def _reading_model_to_entity(self, model: SmartMeterReadingModel) -> MeterReading:
         """Convert reading model to domain entity"""
         return MeterReading(
             timestamp=model.timestamp,
@@ -334,7 +334,7 @@ class SmartMeterRepository(ISmartMeterRepository):
     async def get_by_manufacturer(self, manufacturer: str) -> List[SmartMeter]:
         """Get smart meters by manufacturer"""
         try:
-            models = self.session.query(SmartMeterModel).filter(
+            models = self.db_session.query(SmartMeterModel).filter(
                 SmartMeterModel.manufacturer == manufacturer
             ).all()
             return [self._model_to_entity(model) for model in models]
@@ -344,24 +344,34 @@ class SmartMeterRepository(ISmartMeterRepository):
     async def get_with_anomalies(self, since: Optional[datetime] = None) -> List[SmartMeter]:
         """Get smart meters with anomalies since given date"""
         try:
-            query = self.session.query(SmartMeterModel).join(MeterReadingModel).filter(
-                MeterReadingModel.anomaly_detected == True
+            query = self.db_session.query(SmartMeterModel).join(SmartMeterReadingModel).filter(
+                SmartMeterReadingModel.is_anomaly == True
             )
             if since:
-                query = query.filter(MeterReadingModel.timestamp >= since)
+                query = query.filter(SmartMeterReadingModel.timestamp >= since)
             models = query.distinct().all()
             return [self._model_to_entity(model) for model in models]
         except Exception as e:
             raise DataQualityError(f"Failed to get meters with anomalies: {str(e)}")
     
     async def get_by_performance_score_range(self, min_score: float, max_score: float) -> List[SmartMeter]:
-        """Get smart meters by performance score range"""
+        """Get smart meters by performance score range (using quality_tier as proxy)"""
         try:
-            models = self.session.query(SmartMeterModel).filter(
-                and_(
-                    SmartMeterModel.performance_score >= min_score,
-                    SmartMeterModel.performance_score <= max_score
-                )
+            # Map score range to quality tiers
+            # 0.0-0.3 = POOR, 0.3-0.7 = FAIR, 0.7-1.0 = GOOD/EXCELLENT
+            quality_tiers = []
+            if min_score <= 0.3:
+                quality_tiers.append(QualityTier.POOR)
+            if min_score <= 0.7 and max_score >= 0.3:
+                quality_tiers.append(QualityTier.FAIR)
+            if max_score >= 0.7:
+                quality_tiers.extend([QualityTier.GOOD, QualityTier.EXCELLENT])
+            
+            if not quality_tiers:
+                return []
+                
+            models = self.db_session.query(SmartMeterModel).filter(
+                SmartMeterModel.quality_tier.in_(quality_tiers)
             ).all()
             return [self._model_to_entity(model) for model in models]
         except Exception as e:
@@ -411,3 +421,117 @@ class SmartMeterRepository(ISmartMeterRepository):
             return self.db_session.query(SmartMeterModel).count()
         except Exception as e:
             raise DataQualityError(f"Failed to get total count: {str(e)}")
+    
+    async def get_active_count(self) -> int:
+        """Get count of active smart meters"""
+        try:
+            return self.db_session.query(SmartMeterModel).filter(
+                SmartMeterModel.status == MeterStatus.ACTIVE
+            ).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get active count: {str(e)}")
+    
+    async def get_readings_count_in_period(self, start_time: datetime, end_time: datetime) -> int:
+        """Get count of readings in a time period"""
+        try:
+            return self.db_session.query(SmartMeterReadingModel).filter(
+                SmartMeterReadingModel.timestamp >= start_time,
+                SmartMeterReadingModel.timestamp <= end_time
+            ).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get readings count: {str(e)}")
+    
+    async def get_average_quality_score(self) -> float:
+        """Get average quality score of smart meters"""
+        try:
+            result = self.db_session.query(
+                func.avg(SmartMeterReadingModel.data_quality_score)
+            ).scalar()
+            return float(result) if result is not None else 0.0
+        except Exception as e:
+            raise DataQualityError(f"Failed to get average quality score: {str(e)}")
+    
+    async def get_anomaly_rate(self) -> float:
+        """Get anomaly rate for smart meters"""
+        try:
+            total_readings = self.db_session.query(SmartMeterReadingModel).count()
+            if total_readings == 0:
+                return 0.0
+            
+            anomaly_count = self.db_session.query(SmartMeterReadingModel).filter(
+                SmartMeterReadingModel.is_anomaly == True
+            ).count()
+            
+            return (anomaly_count / total_readings) * 100
+        except Exception as e:
+            raise DataQualityError(f"Failed to get anomaly rate: {str(e)}")
+    
+    async def get_data_quality_metrics(self, start_time: datetime, end_time: datetime) -> dict:
+        """Get data quality metrics for a time period"""
+        try:
+            # Get total records in period
+            total_records = self.db_session.query(SmartMeterReadingModel).filter(
+                SmartMeterReadingModel.timestamp >= start_time,
+                SmartMeterReadingModel.timestamp <= end_time
+            ).count()
+            
+            # Get quality issues
+            missing_data = self.db_session.query(SmartMeterReadingModel).filter(
+                SmartMeterReadingModel.timestamp >= start_time,
+                SmartMeterReadingModel.timestamp <= end_time,
+                SmartMeterReadingModel.active_power.is_(None)
+            ).count()
+            
+            invalid_data = self.db_session.query(SmartMeterReadingModel).filter(
+                SmartMeterReadingModel.timestamp >= start_time,
+                SmartMeterReadingModel.timestamp <= end_time,
+                SmartMeterReadingModel.active_power < 0
+            ).count()
+            
+            outliers = self.db_session.query(SmartMeterReadingModel).filter(
+                SmartMeterReadingModel.timestamp >= start_time,
+                SmartMeterReadingModel.timestamp <= end_time,
+                SmartMeterReadingModel.is_anomaly == True
+            ).count()
+            
+            # Calculate quality score
+            quality_issues = missing_data + invalid_data + outliers
+            quality_score = max(0, (total_records - quality_issues) / max(total_records, 1)) * 100
+            
+            return {
+                'total_records': total_records,
+                'avg_quality_score': quality_score,
+                'quality_trend': 0.0,  # Placeholder
+                'quality_issues': quality_issues,
+                'missing_data': missing_data,
+                'invalid_data': invalid_data,
+                'outliers': outliers
+            }
+        except Exception as e:
+            raise DataQualityError(f"Failed to get data quality metrics: {str(e)}")
+    
+    async def get_daily_stats(self, start_time: datetime, end_time: datetime) -> dict:
+        """Get daily statistics for smart meters"""
+        try:
+            total_readings = self.db_session.query(SmartMeterReadingModel).filter(
+                SmartMeterReadingModel.timestamp >= start_time,
+                SmartMeterReadingModel.timestamp <= end_time
+            ).count()
+            
+            avg_quality_score = self.db_session.query(
+                func.avg(SmartMeterReadingModel.data_quality_score)
+            ).scalar() or 0.0
+            
+            anomaly_count = self.db_session.query(SmartMeterReadingModel).filter(
+                SmartMeterReadingModel.timestamp >= start_time,
+                SmartMeterReadingModel.timestamp <= end_time,
+                SmartMeterReadingModel.is_anomaly == True
+            ).count()
+            
+            return {
+                'total_readings': total_readings,
+                'avg_quality_score': float(avg_quality_score),
+                'anomaly_count': anomaly_count
+            }
+        except Exception as e:
+            raise DataQualityError(f"Failed to get daily stats: {str(e)}")

@@ -27,6 +27,7 @@ graph TB
     subgraph "⚙️ Data Processing"
         API[FastAPI Services<br/>🚀 REST API]
         WORKERS[Background Workers<br/>🔄 Processing & Analytics]
+        SPARK[Apache Spark<br/>⚡ ETL Processing]
         DBT[dbt Transformations<br/>📊 Data Modeling]
     end
 
@@ -59,18 +60,23 @@ graph TB
     
     KAFKA --> API
     KAFKA --> WORKERS
+    KAFKA --> SPARK
     AIRFLOW --> WORKERS
+    AIRFLOW --> SPARK
     
     API --> POSTGRES
     WORKERS --> POSTGRES
     WORKERS --> SNOWFLAKE
     WORKERS --> S3
+    SPARK --> S3
+    SPARK --> SNOWFLAKE
     
     DBT --> SNOWFLAKE
     
     %% Monitoring connections
     API --> DATADOG
     WORKERS --> DATADOG
+    SPARK --> DATADOG
     KAFKA --> PROMETHEUS
     POSTGRES --> GRAFANA
     SNOWFLAKE --> GRAFANA
@@ -78,6 +84,7 @@ graph TB
     %% Infrastructure connections
     API --> DOCKER
     WORKERS --> DOCKER
+    SPARK --> DOCKER
     DOCKER --> K8S
     K8S --> TERRAFORM
 
@@ -89,7 +96,7 @@ graph TB
     classDef infrastructure fill:#fce4ec,stroke:#880e4f,stroke-width:2px
 
     class SM,GO,WS dataSource
-    class KAFKA,AIRFLOW,API,WORKERS,DBT processing
+    class KAFKA,AIRFLOW,API,WORKERS,SPARK,DBT processing
     class POSTGRES,SNOWFLAKE,S3 storage
     class DATADOG,PROMETHEUS,GRAFANA,JAEGER monitoring
     class DOCKER,K8S,TERRAFORM infrastructure
@@ -122,6 +129,7 @@ graph TB
 - **📈 Advanced Analytics**: Time series forecasting, multivariate analysis, and interactive visualizations
 - **🔍 Data Quality Management**: Great Expectations validation, ML-based quality prediction, and automated remediation
 - **⚡ Performance Optimization**: Multi-level caching, query optimization, and stream processing with Apache Flink
+- **🔄 Hybrid ETL Architecture**: Apache Spark for heavy data processing + dbt for analytics and business logic
 - **☁️ Multi-Cloud Architecture**: AWS, Azure, and GCP deployment with cross-cloud replication and failover
 
 ## ✨ Why Choose This Solution?
@@ -236,6 +244,7 @@ This project follows **Clean Architecture** principles with clear separation of 
 - **🌊 Apache Kafka**: Real-time data streaming
 - **⚡ Apache Flink**: Advanced stream processing
 - **🔄 Apache Airflow**: Workflow orchestration
+- **⚡ Apache Spark**: Distributed ETL processing
 - **📊 dbt**: Data transformation and modeling
 
 ### Machine Learning & AI
@@ -392,6 +401,11 @@ open http://localhost:8000/docs
 - **[Tests and Quality](dbt/tests/)** - Data quality tests and validations
 - **[Macros](dbt/macros/)** - Reusable SQL functions and transformations
 
+### ⚡ Spark ETL Integration
+- **[Spark ETL Overview](roadmap/initiatives/spark-etl-integration/README.md)** - Spark ETL integration initiative and business justification
+- **[Technical Implementation](roadmap/initiatives/spark-etl-integration/technical-implementation.md)** - Technical architecture and implementation details
+- **[Migration Strategy](roadmap/initiatives/spark-etl-integration/migration-strategy.md)** - Migration approach and rollout plan
+
 ### 🤖 Machine Learning & AI
 - **[ML Overview](docs/ml/ml-overview.md)** - Machine learning capabilities and architecture
 - **[Model Training](docs/ml/model-training.md)** - ML model development and training
@@ -452,6 +466,7 @@ open http://localhost:8000/docs
 - Learn [Data Ingestion](docs/user_guides/data-ingestion-guide.md)
 - Review [Data Quality](docs/quality/quality-overview.md)
 - Explore [dbt Transformations](dbt/README.md)
+- Plan [Spark ETL Integration](roadmap/initiatives/spark-etl-integration/README.md)
 - Master [Advanced Analytics](docs/analytics/analytics-overview.md)
 
 ### For ML Engineers

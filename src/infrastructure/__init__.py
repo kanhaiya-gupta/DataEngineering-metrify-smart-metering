@@ -3,7 +3,7 @@ Infrastructure Module
 Contains infrastructure implementations for external dependencies
 """
 
-from .database.models.smart_meter_model import SmartMeterModel, MeterReadingModel, MeterEventModel
+from .database.models.smart_meter_model import SmartMeterModel, SmartMeterReadingModel, MeterEventModel
 from .database.models.grid_operator_model import GridOperatorModel, GridStatusModel, GridEventModel
 from .database.models.weather_station_model import WeatherStationModel, WeatherObservationModel, WeatherEventModel
 from .database.repositories.smart_meter_repository import SmartMeterRepository
@@ -32,7 +32,7 @@ from .external.airflow.airflow_client import AirflowClient
 __all__ = [
     # Database Models
     "SmartMeterModel",
-    "MeterReadingModel", 
+    "SmartMeterReadingModel", 
     "MeterEventModel",
     "GridOperatorModel",
     "GridStatusModel",

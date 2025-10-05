@@ -116,7 +116,19 @@ class AuthMiddleware:
             
             # Data Engineering Endpoints - Governance
             "/api/v1/governance/status",
-            "/api/v1/governance/health"
+            "/api/v1/governance/health",
+            
+            # Data Pipeline Endpoints
+            "/api/v1/pipeline/upload/s3",
+            "/api/v1/pipeline/upload/snowflake",
+            "/api/v1/pipeline/trigger/etl",
+            "/api/v1/pipeline/trigger/dbt",
+            "/api/v1/pipeline/trigger/full-pipeline",
+            "/api/v1/pipeline/status/",
+            "/api/v1/pipeline/dags",
+            "/api/v1/pipeline/health",
+            "/api/v1/pipeline/data-flow/complete",
+            "/api/v1/pipeline/data-flow/validate"
         ]
         return path in public_endpoints
     

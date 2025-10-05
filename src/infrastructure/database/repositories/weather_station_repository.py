@@ -6,7 +6,7 @@ Concrete implementation of IWeatherStationRepository using SQLAlchemy
 from typing import List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc
+from sqlalchemy import and_, or_, desc, asc, func
 from sqlalchemy.exc import IntegrityError
 
 from ....core.domain.entities.weather_station import WeatherStation, WeatherObservation
@@ -349,3 +349,114 @@ class WeatherStationRepository(IWeatherStationRepository):
             return stations, total_count
         except Exception as e:
             raise DataQualityError(f"Failed to get stations with filters: {str(e)}")
+    
+    async def get_total_count(self) -> int:
+        """Get total count of weather stations"""
+        try:
+            return self.db_session.query(WeatherStationModel).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get total count: {str(e)}")
+    
+    async def get_active_count(self) -> int:
+        """Get count of active weather stations"""
+        try:
+            return self.db_session.query(WeatherStationModel).filter(
+                WeatherStationModel.status == WeatherStationStatus.ACTIVE
+            ).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get active count: {str(e)}")
+    
+    async def get_observations_count_in_period(self, start_time: datetime, end_time: datetime) -> int:
+        """Get count of observations in a time period"""
+        try:
+            return self.db_session.query(WeatherObservationModel).filter(
+                WeatherObservationModel.timestamp >= start_time,
+                WeatherObservationModel.timestamp <= end_time
+            ).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get observations count: {str(e)}")
+    
+    async def get_anomaly_rate(self) -> float:
+        """Get anomaly rate for weather stations"""
+        try:
+            total_observations = self.db_session.query(WeatherObservationModel).count()
+            if total_observations == 0:
+                return 0.0
+            
+            anomaly_count = self.db_session.query(WeatherObservationModel).filter(
+                WeatherObservationModel.is_anomaly == True
+            ).count()
+            
+            return (anomaly_count / total_observations) * 100
+        except Exception as e:
+            raise DataQualityError(f"Failed to get anomaly rate: {str(e)}")
+    
+    async def get_data_quality_metrics(self, start_time: datetime, end_time: datetime) -> dict:
+        """Get data quality metrics for a time period"""
+        try:
+            # Get total records in period
+            total_records = self.db_session.query(WeatherObservationModel).filter(
+                WeatherObservationModel.timestamp >= start_time,
+                WeatherObservationModel.timestamp <= end_time
+            ).count()
+            
+            # Get quality issues
+            missing_data = self.db_session.query(WeatherObservationModel).filter(
+                WeatherObservationModel.timestamp >= start_time,
+                WeatherObservationModel.timestamp <= end_time,
+                WeatherObservationModel.temperature.is_(None)
+            ).count()
+            
+            invalid_data = self.db_session.query(WeatherObservationModel).filter(
+                WeatherObservationModel.timestamp >= start_time,
+                WeatherObservationModel.timestamp <= end_time,
+                WeatherObservationModel.temperature < -100  # Invalid temperature
+            ).count()
+            
+            outliers = self.db_session.query(WeatherObservationModel).filter(
+                WeatherObservationModel.timestamp >= start_time,
+                WeatherObservationModel.timestamp <= end_time,
+                WeatherObservationModel.is_anomaly == True
+            ).count()
+            
+            # Calculate quality score
+            quality_issues = missing_data + invalid_data + outliers
+            quality_score = max(0, (total_records - quality_issues) / max(total_records, 1)) * 100
+            
+            return {
+                'total_records': total_records,
+                'avg_quality_score': quality_score,
+                'quality_trend': 0.0,  # Placeholder
+                'quality_issues': quality_issues,
+                'missing_data': missing_data,
+                'invalid_data': invalid_data,
+                'outliers': outliers
+            }
+        except Exception as e:
+            raise DataQualityError(f"Failed to get data quality metrics: {str(e)}")
+    
+    async def get_daily_stats(self, start_time: datetime, end_time: datetime) -> dict:
+        """Get daily statistics for weather stations"""
+        try:
+            total_observations = self.db_session.query(WeatherObservationModel).filter(
+                WeatherObservationModel.timestamp >= start_time,
+                WeatherObservationModel.timestamp <= end_time
+            ).count()
+            
+            avg_quality_score = self.db_session.query(
+                func.avg(WeatherStationModel.average_quality_score)
+            ).scalar() or 0.0
+            
+            anomaly_count = self.db_session.query(WeatherObservationModel).filter(
+                WeatherObservationModel.timestamp >= start_time,
+                WeatherObservationModel.timestamp <= end_time,
+                WeatherObservationModel.is_anomaly == True
+            ).count()
+            
+            return {
+                'total_observations': total_observations,
+                'avg_quality_score': float(avg_quality_score),
+                'anomaly_count': anomaly_count
+            }
+        except Exception as e:
+            raise DataQualityError(f"Failed to get daily stats: {str(e)}")

@@ -20,11 +20,14 @@ from .v1.analytics_endpoints import router as analytics_router
 from .v1.advanced_analytics_endpoints import router as advanced_analytics_router
 from .v1.governance_endpoints import router as governance_router
 from .v1.ml_endpoints import router as ml_router
+from .v1.data_pipeline_endpoints import router as data_pipeline_router
 from .middleware.auth_middleware import AuthMiddleware
 from .middleware.logging_middleware import LoggingMiddleware
 from .middleware.monitoring_middleware import MonitoringMiddleware
-from src.core.config.config_loader import get_app_config
+from src.core.config.config_loader import get_app_config, get_snowflake_config, get_s3_config
 from src.infrastructure.database.config import DatabaseConfig
+from src.infrastructure.external.s3.s3_client import S3Client
+from src.infrastructure.external.snowflake.snowflake_client import SnowflakeClient
 from src.infrastructure.external.monitoring.monitoring_service import MonitoringService
 from src.infrastructure.external.monitoring.prometheus.prometheus_client import PrometheusClient
 from src.infrastructure.external.monitoring.grafana.grafana_client import GrafanaClient
@@ -56,6 +59,30 @@ async def lifespan(app: FastAPI):
         db_config = DatabaseConfig()
         db_config.create_tables()
         logger.info("Database tables created successfully")
+        
+        # Initialize S3 and ensure buckets exist
+        try:
+            logger.info("Initializing S3...")
+            s3_config = get_s3_config()
+            s3_client = S3Client(s3_config)
+            await s3_client.connect()
+            await s3_client.disconnect()
+            logger.info("S3 buckets setup completed successfully")
+        except Exception as e:
+            logger.warning(f"S3 initialization failed (may not be configured): {str(e)}")
+            # Continue startup even if S3 fails - it's optional
+        
+        # Initialize Snowflake and ensure infrastructure exists
+        try:
+            logger.info("Initializing Snowflake...")
+            snowflake_config = get_snowflake_config()
+            snowflake_client = SnowflakeClient(snowflake_config)
+            await snowflake_client.connect()
+            await snowflake_client.disconnect()
+            logger.info("Snowflake infrastructure setup completed successfully")
+        except Exception as e:
+            logger.warning(f"Snowflake initialization failed (may not be configured): {str(e)}")
+            # Continue startup even if Snowflake fails - it's optional
         
         # Create monitoring clients
         prometheus_client = PrometheusClient(
@@ -178,6 +205,11 @@ app.include_router(
     ml_router,
     prefix="/api/v1",
     tags=["Machine Learning"]
+)
+
+app.include_router(
+    data_pipeline_router,
+    tags=["Data Pipeline"]
 )
 
 

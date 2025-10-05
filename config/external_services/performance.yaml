@@ -1,0 +1,294 @@
+# Performance Optimization Configuration
+# Defines performance settings, resource limits, and optimization parameters
+
+# Global Performance Settings
+global:
+  # Memory Management
+  memory:
+    max_memory_usage: "2GB"  # Maximum memory usage per process
+    memory_warning_threshold: "1.5GB"  # Memory warning threshold
+    gc_frequency: 1000  # Garbage collection frequency (records)
+    
+  # CPU Management
+  cpu:
+    max_cpu_cores: 4  # Maximum CPU cores to use
+    cpu_affinity: true  # Enable CPU affinity
+    thread_pool_size: 8  # Thread pool size for concurrent processing
+    
+  # I/O Optimization
+  io:
+    buffer_size: "64KB"  # I/O buffer size
+    prefetch_size: 1000  # Number of records to prefetch
+    async_io: true  # Enable asynchronous I/O
+    
+  # Monitoring
+  monitoring:
+    metrics_interval: 30  # Metrics collection interval (seconds)
+    performance_logging: true  # Enable performance logging
+    resource_tracking: true  # Enable resource usage tracking
+
+# Data Source Specific Performance Settings
+data_sources:
+  smart_meters:
+    # Batch Processing
+    batch_processing:
+      optimal_batch_size: 2000  # Optimal batch size for processing
+      max_batch_size: 5000  # Maximum batch size
+      min_batch_size: 500  # Minimum batch size
+      batch_timeout: 30  # Batch processing timeout (seconds)
+      parallel_batches: 2  # Number of parallel batches to process
+      
+    # Memory Optimization
+    memory:
+      chunk_size: 15000  # Pandas chunk size for CSV reading
+      compression: "gzip"  # Compression for intermediate files
+      cache_size: "100MB"  # Cache size for frequently accessed data
+      
+    # Kafka Optimization
+    kafka:
+      producer_batch_size: 1000  # Kafka producer batch size
+      producer_linger_ms: 10  # Producer linger time
+      producer_compression: "gzip"  # Producer compression
+      max_in_flight_requests: 5  # Max in-flight requests
+      
+    # Processing Optimization
+    processing:
+      parallel_workers: 4  # Number of parallel workers
+      processing_timeout: 300  # Processing timeout (seconds)
+      retry_attempts: 3  # Number of retry attempts
+      backoff_factor: 2  # Exponential backoff factor
+      
+  grid_operators:
+    batch_processing:
+      optimal_batch_size: 500
+      max_batch_size: 1000
+      min_batch_size: 100
+      batch_timeout: 15
+      parallel_batches: 3
+      
+    memory:
+      chunk_size: 5000
+      compression: "gzip"
+      cache_size: "50MB"
+      
+    kafka:
+      producer_batch_size: 500
+      producer_linger_ms: 5
+      producer_compression: "gzip"
+      max_in_flight_requests: 3
+      
+    processing:
+      parallel_workers: 2
+      processing_timeout: 180
+      retry_attempts: 3
+      backoff_factor: 2
+      
+  weather_stations:
+    batch_processing:
+      optimal_batch_size: 300
+      max_batch_size: 800
+      min_batch_size: 50
+      batch_timeout: 10
+      parallel_batches: 4
+      
+    memory:
+      chunk_size: 3000
+      compression: "gzip"
+      cache_size: "30MB"
+      
+    kafka:
+      producer_batch_size: 300
+      producer_linger_ms: 5
+      producer_compression: "gzip"
+      max_in_flight_requests: 2
+      
+    processing:
+      parallel_workers: 2
+      processing_timeout: 120
+      retry_attempts: 3
+      backoff_factor: 2
+
+# Worker Performance Settings
+workers:
+  ingestion_worker:
+    # Resource Limits
+    resources:
+      max_memory: "1GB"
+      max_cpu_cores: 2
+      max_concurrent_tasks: 5
+      
+    # Processing Settings
+    processing:
+      batch_size: 1000
+      processing_interval: 30  # seconds
+      max_retries: 3
+      retry_delay: 5  # seconds
+      
+    # Kafka Consumer Settings
+    kafka_consumer:
+      fetch_min_bytes: 1024
+      fetch_max_wait_ms: 500
+      max_poll_records: 1000
+      session_timeout_ms: 30000
+      request_timeout_ms: 40000
+      
+  processing_worker:
+    resources:
+      max_memory: "2GB"
+      max_cpu_cores: 3
+      max_concurrent_tasks: 3
+      
+    processing:
+      batch_size: 500
+      processing_interval: 60
+      max_retries: 3
+      retry_delay: 10
+      
+    kafka_consumer:
+      fetch_min_bytes: 2048
+      fetch_max_wait_ms: 1000
+      max_poll_records: 500
+      session_timeout_ms: 45000
+      request_timeout_ms: 50000
+      
+  monitoring_worker:
+    resources:
+      max_memory: "512MB"
+      max_cpu_cores: 1
+      max_concurrent_tasks: 2
+      
+    processing:
+      batch_size: 100
+      processing_interval: 15
+      max_retries: 2
+      retry_delay: 3
+
+# Database Performance Settings
+database:
+  postgresql:
+    # Connection Pool
+    connection_pool:
+      min_connections: 5
+      max_connections: 20
+      connection_timeout: 30
+      idle_timeout: 300
+      
+    # Query Optimization
+    query_optimization:
+      statement_timeout: 300  # seconds
+      lock_timeout: 30  # seconds
+      enable_parallel_query: true
+      max_parallel_workers: 4
+      
+    # Bulk Operations
+    bulk_operations:
+      batch_size: 1000
+      copy_batch_size: 5000
+      enable_bulk_insert: true
+      enable_bulk_update: true
+      
+  snowflake:
+    # Connection Settings
+    connection:
+      max_connections: 10
+      connection_timeout: 60
+      query_timeout: 300
+      
+    # Query Optimization
+    query_optimization:
+      enable_auto_commit: false
+      enable_parallel_query: true
+      max_parallel_workers: 8
+      
+    # Bulk Operations
+    bulk_operations:
+      batch_size: 2000
+      copy_batch_size: 10000
+      enable_bulk_load: true
+
+# Kafka Performance Settings
+kafka:
+  # Producer Settings
+  producer:
+    batch_size: 16384  # bytes
+    linger_ms: 10
+    compression_type: "gzip"
+    max_in_flight_requests_per_connection: 5
+    retries: 3
+    retry_backoff_ms: 100
+    request_timeout_ms: 30000
+    
+  # Consumer Settings
+  consumer:
+    fetch_min_bytes: 1024
+    fetch_max_wait_ms: 500
+    max_poll_records: 1000
+    session_timeout_ms: 30000
+    request_timeout_ms: 40000
+    enable_auto_commit: false
+    auto_offset_reset: "earliest"
+    
+  # Broker Settings
+  broker:
+    num_partitions: 12  # Default number of partitions
+    replication_factor: 1
+    min_insync_replicas: 1
+
+# Monitoring and Alerting
+monitoring:
+  # Performance Metrics
+  metrics:
+    collection_interval: 30  # seconds
+    retention_days: 30
+    enable_real_time: true
+    
+  # Resource Monitoring
+  resources:
+    memory_threshold: 80  # percentage
+    cpu_threshold: 80  # percentage
+    disk_threshold: 85  # percentage
+    
+  # Performance Alerts
+  alerts:
+    slow_processing_threshold: 60  # seconds
+    high_memory_usage_threshold: 85  # percentage
+    high_cpu_usage_threshold: 90  # percentage
+    low_throughput_threshold: 100  # records/second
+    
+  # Dashboard Settings
+  dashboard:
+    refresh_interval: 10  # seconds
+    max_data_points: 1000
+    enable_export: true
+
+# Optimization Strategies
+optimization:
+  # Adaptive Batch Sizing
+  adaptive_batching:
+    enabled: true
+    adjustment_factor: 0.1
+    min_adjustment: 100
+    max_adjustment: 1000
+    performance_window: 300  # seconds
+    
+  # Dynamic Resource Allocation
+  dynamic_allocation:
+    enabled: true
+    scale_up_threshold: 70  # percentage
+    scale_down_threshold: 30  # percentage
+    scale_factor: 1.5
+    cooldown_period: 300  # seconds
+    
+  # Caching Strategy
+  caching:
+    enabled: true
+    cache_size: "200MB"
+    ttl: 3600  # seconds
+    eviction_policy: "lru"
+    
+  # Compression
+  compression:
+    enabled: true
+    algorithm: "gzip"
+    level: 6
+    min_size: 1024  # bytes

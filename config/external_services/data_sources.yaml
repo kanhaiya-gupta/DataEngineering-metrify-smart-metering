@@ -1,0 +1,181 @@
+# Data Sources Configuration
+# Defines file paths, naming patterns, and data source settings
+
+# Data Source Root Directory
+data_root: "data/raw"
+
+# Smart Meter Data Sources
+smart_meters:
+  # File paths
+  readings_file: "smart_meters/smart_meter_readings.csv"
+  meters_file: "smart_meters/smart_meters.csv"
+  
+  # File patterns (for dynamic discovery)
+  file_patterns:
+    readings: "smart_meters/smart_meter_readings*.csv"
+    meters: "smart_meters/smart_meters*.csv"
+  
+  # Data processing settings
+  batch_size: 1000
+  processing_interval: 60  # seconds
+  kafka_topic: "smart_meter_data"
+  
+  # CSV settings
+  csv_settings:
+    delimiter: ","
+    has_header: true
+    encoding: "utf-8"
+    chunk_size: 10000
+  
+  # Data validation
+  validation:
+    required_columns:
+      - "reading_id"
+      - "meter_id" 
+      - "reading_timestamp"
+      - "consumption_kwh"
+      - "voltage_v"
+      - "current_a"
+    data_types:
+      reading_id: "string"
+      meter_id: "string"
+      reading_timestamp: "datetime"
+      consumption_kwh: "float"
+      voltage_v: "float"
+      current_a: "float"
+
+# Grid Operator Data Sources
+grid_operators:
+  # File paths
+  operators_file: "grid_operators/grid_operators.csv"
+  status_file: "grid_operators/grid_status.csv"
+  
+  # File patterns
+  file_patterns:
+    operators: "grid_operators/grid_operators*.csv"
+    status: "grid_operators/grid_status*.csv"
+  
+  # Data processing settings
+  batch_size: 100
+  processing_interval: 60  # seconds
+  kafka_topic: "grid_operator_data"
+  
+  # CSV settings
+  csv_settings:
+    delimiter: ","
+    has_header: true
+    encoding: "utf-8"
+    chunk_size: 5000
+  
+  # Data validation
+  validation:
+    required_columns:
+      - "status_id"
+      - "operator_id"
+      - "status_timestamp"
+      - "grid_frequency_hz"
+      - "grid_voltage_kv"
+      - "grid_load_mw"
+    data_types:
+      status_id: "string"
+      operator_id: "string"
+      status_timestamp: "datetime"
+      grid_frequency_hz: "float"
+      grid_voltage_kv: "float"
+      grid_load_mw: "float"
+    value_ranges:
+      grid_frequency_hz: {min: 49.8, max: 50.2}
+      grid_voltage_kv: {min: 220, max: 400}
+      grid_load_mw: {min: 0, max: 20000}
+
+# Weather Station Data Sources
+weather_stations:
+  # File paths
+  stations_file: "weather_stations/weather_stations.csv"
+  observations_file: "weather_stations/weather_observations.csv"
+  
+  # File patterns
+  file_patterns:
+    stations: "weather_stations/weather_stations*.csv"
+    observations: "weather_stations/weather_observations*.csv"
+  
+  # Data processing settings
+  batch_size: 100
+  processing_interval: 300  # 5 minutes
+  kafka_topic: "weather_data"
+  
+  # CSV settings
+  csv_settings:
+    delimiter: ","
+    has_header: true
+    encoding: "utf-8"
+    chunk_size: 5000
+  
+  # Data validation
+  validation:
+    required_columns:
+      - "observation_id"
+      - "station_id"
+      - "observation_timestamp"
+      - "temperature_celsius"
+      - "humidity_percent"
+      - "pressure_hpa"
+    data_types:
+      observation_id: "string"
+      station_id: "string"
+      observation_timestamp: "datetime"
+      temperature_celsius: "float"
+      humidity_percent: "float"
+      pressure_hpa: "float"
+    value_ranges:
+      temperature_celsius: {min: -50, max: 50}
+      humidity_percent: {min: 0, max: 100}
+      pressure_hpa: {min: 800, max: 1100}
+      wind_speed_mps: {min: 0, max: 50}
+      wind_direction_degrees: {min: 0, max: 360}
+
+# Data Processing Configuration
+processing:
+  # File discovery
+  file_discovery:
+    enabled: true
+    scan_interval: 300  # 5 minutes
+    file_extensions: [".csv", ".json", ".parquet"]
+    exclude_patterns: ["*.tmp", "*.bak", "*.log"]
+  
+  # Data quality
+  data_quality:
+    enable_validation: true
+    enable_anomaly_detection: true
+    quality_threshold: 0.95
+    max_null_percentage: 0.05
+  
+  # Error handling
+  error_handling:
+    max_retries: 3
+    retry_delay: 60  # seconds
+    dead_letter_topic: "data-engineering-errors"
+    log_errors: true
+  
+  # Performance
+  performance:
+    max_concurrent_files: 5
+    memory_limit_mb: 1024
+    cpu_limit_percent: 80
+
+# Environment-specific overrides
+environments:
+  development:
+    data_root: "data/raw"
+    batch_size_multiplier: 0.1  # Smaller batches for dev
+    processing_interval_multiplier: 0.5  # Faster processing for dev
+  
+  staging:
+    data_root: "data/raw"
+    batch_size_multiplier: 0.5
+    processing_interval_multiplier: 1.0
+  
+  production:
+    data_root: "data/raw"
+    batch_size_multiplier: 1.0
+    processing_interval_multiplier: 1.0

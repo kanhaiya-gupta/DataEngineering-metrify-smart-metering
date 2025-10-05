@@ -5,6 +5,8 @@ REST API endpoints for analytics and reporting
 
 import logging
 from typing import List, Optional, Dict, Any
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, HTTPException, Depends, Query, Path, status
 from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta

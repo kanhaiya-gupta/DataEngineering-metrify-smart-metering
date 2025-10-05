@@ -6,7 +6,7 @@ Concrete implementation of IGridOperatorRepository using SQLAlchemy
 from typing import List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc
+from sqlalchemy import and_, or_, desc, asc, func
 from sqlalchemy.exc import IntegrityError
 
 from ....core.domain.entities.grid_operator import GridOperator, GridStatus
@@ -330,7 +330,7 @@ class GridOperatorRepository(IGridOperatorRepository):
     async def get_average_data_quality(self) -> float:
         """Get average data quality across all grid operators"""
         try:
-            result = self.db_session.query(GridOperatorModel.data_quality_score).all()
+            result = self.db_session.query(GridStatusModel.data_quality_score).all()
             if not result:
                 return 0.0
             scores = [row[0] for row in result if row[0] is not None]
@@ -353,7 +353,7 @@ class GridOperatorRepository(IGridOperatorRepository):
         """Get grid operators by data quality threshold"""
         try:
             models = self.db_session.query(GridOperatorModel).filter(
-                GridOperatorModel.data_quality_score >= threshold
+                GridStatusModel.data_quality_score >= threshold
             ).all()
             return [self._model_to_entity(model) for model in models]
         except Exception as e:
@@ -394,7 +394,7 @@ class GridOperatorRepository(IGridOperatorRepository):
         try:
             models = self.db_session.query(GridOperatorModel).filter(
                 or_(
-                    GridOperatorModel.data_quality_score < 0.8,
+                    GridStatusModel.data_quality_score < 0.8,
                     GridOperatorModel.uptime_percentage < 0.95,
                     GridOperatorModel.status == GridOperatorStatus.MAINTENANCE.value
                 )
@@ -443,3 +443,124 @@ class GridOperatorRepository(IGridOperatorRepository):
             return operators, total_count
         except Exception as e:
             raise DataQualityError(f"Failed to get operators with filters: {str(e)}")
+    
+    async def get_total_count(self) -> int:
+        """Get total count of grid operators"""
+        try:
+            return self.db_session.query(GridOperatorModel).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get total count: {str(e)}")
+    
+    async def get_active_count(self) -> int:
+        """Get count of active grid operators"""
+        try:
+            return self.db_session.query(GridOperatorModel).filter(
+                GridOperatorModel.status == GridOperatorStatus.ACTIVE
+            ).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get active count: {str(e)}")
+    
+    async def get_statuses_count_in_period(self, start_time: datetime, end_time: datetime) -> int:
+        """Get count of statuses in a time period"""
+        try:
+            return self.db_session.query(GridStatusModel).filter(
+                GridStatusModel.timestamp >= start_time,
+                GridStatusModel.timestamp <= end_time
+            ).count()
+        except Exception as e:
+            raise DataQualityError(f"Failed to get statuses count: {str(e)}")
+    
+    async def get_average_quality_score(self) -> float:
+        """Get average quality score of grid operators"""
+        try:
+            result = self.db_session.query(
+                func.avg(GridStatusModel.data_quality_score)
+            ).scalar()
+            return float(result) if result is not None else 0.0
+        except Exception as e:
+            raise DataQualityError(f"Failed to get average quality score: {str(e)}")
+    
+    async def get_anomaly_rate(self) -> float:
+        """Get anomaly rate for grid operators"""
+        try:
+            total_statuses = self.db_session.query(GridStatusModel).count()
+            if total_statuses == 0:
+                return 0.0
+            
+            anomaly_count = self.db_session.query(GridStatusModel).filter(
+                GridStatusModel.is_anomaly == True
+            ).count()
+            
+            return (anomaly_count / total_statuses) * 100
+        except Exception as e:
+            raise DataQualityError(f"Failed to get anomaly rate: {str(e)}")
+    
+    async def get_data_quality_metrics(self, start_time: datetime, end_time: datetime) -> dict:
+        """Get data quality metrics for a time period"""
+        try:
+            # Get total records in period
+            total_records = self.db_session.query(GridStatusModel).filter(
+                GridStatusModel.timestamp >= start_time,
+                GridStatusModel.timestamp <= end_time
+            ).count()
+            
+            # Get quality issues
+            missing_data = self.db_session.query(GridStatusModel).filter(
+                GridStatusModel.timestamp >= start_time,
+                GridStatusModel.timestamp <= end_time,
+                GridStatusModel.total_generation.is_(None)
+            ).count()
+            
+            invalid_data = self.db_session.query(GridStatusModel).filter(
+                GridStatusModel.timestamp >= start_time,
+                GridStatusModel.timestamp <= end_time,
+                GridStatusModel.total_generation < 0
+            ).count()
+            
+            outliers = self.db_session.query(GridStatusModel).filter(
+                GridStatusModel.timestamp >= start_time,
+                GridStatusModel.timestamp <= end_time,
+                GridStatusModel.is_anomaly == True
+            ).count()
+            
+            # Calculate quality score
+            quality_issues = missing_data + invalid_data + outliers
+            quality_score = max(0, (total_records - quality_issues) / max(total_records, 1)) * 100
+            
+            return {
+                'total_records': total_records,
+                'avg_quality_score': quality_score,
+                'quality_trend': 0.0,  # Placeholder
+                'quality_issues': quality_issues,
+                'missing_data': missing_data,
+                'invalid_data': invalid_data,
+                'outliers': outliers
+            }
+        except Exception as e:
+            raise DataQualityError(f"Failed to get data quality metrics: {str(e)}")
+    
+    async def get_daily_stats(self, start_time: datetime, end_time: datetime) -> dict:
+        """Get daily statistics for grid operators"""
+        try:
+            total_statuses = self.db_session.query(GridStatusModel).filter(
+                GridStatusModel.timestamp >= start_time,
+                GridStatusModel.timestamp <= end_time
+            ).count()
+            
+            avg_quality_score = self.db_session.query(
+                func.avg(GridStatusModel.data_quality_score)
+            ).scalar() or 0.0
+            
+            anomaly_count = self.db_session.query(GridStatusModel).filter(
+                GridStatusModel.timestamp >= start_time,
+                GridStatusModel.timestamp <= end_time,
+                GridStatusModel.is_anomaly == True
+            ).count()
+            
+            return {
+                'total_statuses': total_statuses,
+                'avg_quality_score': float(avg_quality_score),
+                'anomaly_count': anomaly_count
+            }
+        except Exception as e:
+            raise DataQualityError(f"Failed to get daily stats: {str(e)}")

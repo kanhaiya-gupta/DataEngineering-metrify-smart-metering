@@ -1,0 +1,162 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw data from various sources"
+    database: "{{ env_var('SNOWFLAKE_DATABASE', 'METRIFY_OPERATIONAL') }}"
+    schema: "{{ env_var('DBT_SCHEMA', 'RAW') }}"
+    tables:
+      - name: smart_meter_readings
+        description: "Raw smart meter readings from Kafka ingestion"
+        columns:
+          - name: reading_id
+            description: "Unique identifier for each reading"
+            tests:
+              - unique
+              - not_null
+          - name: meter_id
+            description: "Smart meter identifier"
+            tests:
+              - not_null
+          - name: reading_timestamp
+            description: "Timestamp when the reading was taken"
+            tests:
+              - not_null
+          - name: consumption_kwh
+            description: "Energy consumption in kWh"
+            tests:
+              - not_null
+          - name: voltage_v
+            description: "Voltage reading in volts"
+          - name: current_a
+            description: "Current reading in amperes"
+          - name: power_factor
+            description: "Power factor measurement"
+          - name: frequency_hz
+            description: "Frequency in Hz"
+          - name: quality_score
+            description: "Data quality score (0-1)"
+          - name: quality_tier
+            description: "Data quality tier classification"
+          - name: is_anomaly
+            description: "Whether the reading is flagged as an anomaly"
+          - name: anomaly_score
+            description: "Anomaly detection score"
+          - name: reading_type
+            description: "Type of reading (automatic, manual, etc.)"
+          - name: reading_source
+            description: "Source of the reading (api, manual, etc.)"
+          - name: data_quality_flags
+            description: "Data quality flags"
+          - name: meter_location_lat
+            description: "Meter latitude coordinate"
+          - name: meter_location_lon
+            description: "Meter longitude coordinate"
+          - name: meter_address
+            description: "Physical address of the meter"
+          - name: tariff_type
+            description: "Tariff type for the meter"
+          - name: time_of_use_period
+            description: "Time of use period classification"
+          - name: is_peak_hour
+            description: "Whether reading is during peak hours"
+          - name: is_weekend
+            description: "Whether reading is on weekend"
+          - name: ingestion_batch_id
+            description: "Batch ID for data ingestion"
+          - name: source_system
+            description: "Source system identifier"
+          - name: raw_data_hash
+            description: "Hash of raw data for integrity checking"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record last update timestamp"
+
+      - name: grid_status_updates
+        description: "Raw grid status updates from operators"
+        columns:
+          - name: status_id
+            description: "Unique identifier for each status update"
+            tests:
+              - unique
+              - not_null
+          - name: operator_id
+            description: "Grid operator identifier"
+            tests:
+              - not_null
+          - name: status_timestamp
+            description: "Timestamp when the status was recorded"
+            tests:
+              - not_null
+          - name: grid_frequency_hz
+            description: "Grid frequency in Hz"
+            tests:
+              - not_null
+          - name: grid_voltage_kv
+            description: "Grid voltage in kV"
+          - name: power_generation_mw
+            description: "Power generation in MW"
+          - name: power_consumption_mw
+            description: "Power consumption in MW"
+          - name: grid_stability_score
+            description: "Grid stability score (0-1)"
+          - name: is_stable
+            description: "Whether the grid is stable"
+          - name: alert_level
+            description: "Alert level (NORMAL, WARNING, CRITICAL)"
+          - name: region_code
+            description: "Grid region code"
+          - name: operator_name
+            description: "Name of the grid operator"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record last update timestamp"
+
+      - name: weather_observations
+        description: "Raw weather observations from stations"
+        columns:
+          - name: observation_id
+            description: "Unique identifier for each observation"
+            tests:
+              - unique
+              - not_null
+          - name: station_id
+            description: "Weather station identifier"
+            tests:
+              - not_null
+          - name: observation_timestamp
+            description: "Timestamp when the observation was made"
+            tests:
+              - not_null
+          - name: temperature_celsius
+            description: "Temperature in Celsius"
+          - name: humidity_percent
+            description: "Humidity percentage"
+          - name: pressure_hpa
+            description: "Atmospheric pressure in hPa"
+          - name: wind_speed_ms
+            description: "Wind speed in m/s"
+          - name: wind_direction_degrees
+            description: "Wind direction in degrees"
+          - name: precipitation_mm
+            description: "Precipitation in mm"
+          - name: visibility_km
+            description: "Visibility in kilometers"
+          - name: cloud_cover_percent
+            description: "Cloud cover percentage"
+          - name: uv_index
+            description: "UV index"
+          - name: station_name
+            description: "Name of the weather station"
+          - name: station_location_lat
+            description: "Station latitude coordinate"
+          - name: station_location_lon
+            description: "Station longitude coordinate"
+          - name: station_elevation_m
+            description: "Station elevation in meters"
+          - name: created_at
+            description: "Record creation timestamp"
+          - name: updated_at
+            description: "Record last update timestamp"

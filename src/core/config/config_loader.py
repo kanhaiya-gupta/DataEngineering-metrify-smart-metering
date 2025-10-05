@@ -65,6 +65,7 @@ class S3Config:
     archive_prefix: str
     archive_retention_days: int
     archive_compression: bool
+    backup_bucket: str
 
 
 @dataclass
@@ -286,16 +287,17 @@ class ConfigLoader:
     def get_s3_config(self) -> S3Config:
         """Get S3 configuration"""
         return S3Config(
-            access_key_id=os.getenv('AWS_ACCESS_KEY_ID', ''),
-            secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY', ''),
-            default_region=os.getenv('AWS_DEFAULT_REGION', 'us-west-2'),
-            bucket=os.getenv('AWS_S3_BUCKET', 'metrify-data-lake'),
-            prefix=os.getenv('AWS_S3_PREFIX', 'data/'),
-            endpoint_url=os.getenv('AWS_S3_ENDPOINT_URL', 'https://s3.us-west-2.amazonaws.com'),
+            access_key_id=os.getenv('S3_ACCESS_KEY_ID', ''),
+            secret_access_key=os.getenv('S3_SECRET_ACCESS_KEY', ''),
+            default_region=os.getenv('S3_REGION', 'eu-central-1'),
+            bucket=os.getenv('S3_BUCKET_NAME', 'metrify-data-lake'),
+            prefix=os.getenv('S3_UPLOAD_PREFIX', 'data/uploads/'),
+            endpoint_url=os.getenv('S3_ENDPOINT_URL', 'https://s3.eu-central-1.amazonaws.com'),
             archive_bucket=os.getenv('S3_ARCHIVE_BUCKET', 'metrify-archive'),
-            archive_prefix=os.getenv('S3_ARCHIVE_PREFIX', 'archive/'),
+            archive_prefix=os.getenv('S3_ARCHIVE_PREFIX', 'data/archive/'),
             archive_retention_days=int(os.getenv('S3_ARCHIVE_RETENTION_DAYS', '2555')),
-            archive_compression=os.getenv('S3_ARCHIVE_COMPRESSION', 'true').lower() == 'true'
+            archive_compression=os.getenv('S3_ARCHIVE_COMPRESSION', 'true').lower() == 'true',
+            backup_bucket=os.getenv('S3_BACKUP_BUCKET', 'metrify-backups')
         )
     
     def get_snowflake_config(self) -> SnowflakeConfig:

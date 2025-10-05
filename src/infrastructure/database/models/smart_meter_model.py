@@ -56,7 +56,7 @@ class SmartMeterModel(Base):
     version = Column(Integer, nullable=False, default=0)
     
     # Relationships
-    readings = relationship("MeterReadingModel", back_populates="meter", cascade="all, delete-orphan")
+    readings = relationship("SmartMeterReadingModel", back_populates="meter", cascade="all, delete-orphan")
     events = relationship("MeterEventModel", back_populates="meter", cascade="all, delete-orphan")
     
     def __repr__(self):
@@ -85,7 +85,7 @@ class SmartMeterModel(Base):
         }
 
 
-class MeterReadingModel(Base):
+class SmartMeterReadingModel(Base):
     """
     SQLAlchemy model for Meter Reading entity
     
@@ -120,7 +120,7 @@ class MeterReadingModel(Base):
     meter = relationship("SmartMeterModel", back_populates="readings")
     
     def __repr__(self):
-        return f"<MeterReadingModel(id={self.id}, meter_id={self.meter_id}, timestamp={self.timestamp})>"
+        return f"<SmartMeterReadingModel(id={self.id}, meter_id={self.meter_id}, timestamp={self.timestamp})>"
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary"""

@@ -13,7 +13,7 @@ from contextlib import contextmanager
 
 from .base import Base
 # Import all models to register them with the shared Base
-from .models.smart_meter_model import SmartMeterModel, MeterReadingModel, MeterEventModel
+from .models.smart_meter_model import SmartMeterModel, SmartMeterReadingModel, MeterEventModel
 from .models.grid_operator_model import GridOperatorModel, GridStatusModel, GridEventModel
 from .models.weather_station_model import WeatherStationModel, WeatherObservationModel, WeatherEventModel
 

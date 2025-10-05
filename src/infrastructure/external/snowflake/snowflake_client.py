@@ -28,33 +28,45 @@ class SnowflakeClient:
     Handles connection management, query execution, and data analytics
     """
     
-    def __init__(
-        self,
-        account: str,
-        user: str,
-        password: str,
-        warehouse: str,
-        database: str,
-        schema: str = "PUBLIC",
-        role: Optional[str] = None
-    ):
+    def __init__(self, config):
+        """
+        Initialize Snowflake client with configuration
+        
+        Args:
+            config: SnowflakeConfig object containing Snowflake connection details
+        """
         if snowflake is None:
             raise InfrastructureError("Snowflake connector not installed", service="snowflake")
         
-        self.account = account
-        self.user = user
-        self.password = password
-        self.warehouse = warehouse
-        self.database = database
-        self.schema = schema
-        self.role = role
+        self.config = config
+        self.account = config.account
+        self.user = config.user
+        self.password = config.password
+        self.warehouse = config.warehouse
+        self.database = config.database
+        self.schema = config.schema
+        self.role = config.role
         
         self._connection = None
         self._is_connected = False
     
     async def connect(self) -> None:
-        """Connect to Snowflake"""
+        """Connect to Snowflake and ensure infrastructure exists"""
         try:
+            # First connect without specifying database/schema to create them if needed
+            self._connection = snowflake.connector.connect(
+                account=self.account,
+                user=self.user,
+                password=self.password,
+                warehouse=self.warehouse,
+                role=self.role
+            )
+            
+            # Ensure all required Snowflake infrastructure exists
+            await self._ensure_infrastructure_exists()
+            
+            # Reconnect with the specific database and schema
+            self._connection.close()
             self._connection = snowflake.connector.connect(
                 account=self.account,
                 user=self.user,
@@ -64,6 +76,7 @@ class SnowflakeClient:
                 schema=self.schema,
                 role=self.role
             )
+            
             self._is_connected = True
             logger.info(f"Connected to Snowflake: {self.account}.{self.database}.{self.schema}")
             
@@ -78,6 +91,208 @@ class SnowflakeClient:
             self._connection = None
             self._is_connected = False
             logger.info("Disconnected from Snowflake")
+    
+    async def _ensure_infrastructure_exists(self) -> None:
+        """Ensure all required Snowflake infrastructure exists (warehouse, database, schema, tables)"""
+        try:
+            cursor = self._connection.cursor()
+            
+            # Ensure warehouse exists
+            await self._ensure_warehouse_exists(cursor)
+            
+            # Ensure database exists
+            await self._ensure_database_exists(cursor)
+            
+            # Ensure schema exists
+            await self._ensure_schema_exists(cursor)
+            
+            # Ensure core tables exist
+            await self._ensure_core_tables_exist(cursor)
+            
+            cursor.close()
+            logger.info("Snowflake infrastructure setup completed successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to ensure Snowflake infrastructure exists: {str(e)}")
+            raise InfrastructureError(f"Failed to setup Snowflake infrastructure: {str(e)}", service="snowflake")
+    
+    async def _ensure_warehouse_exists(self, cursor) -> None:
+        """Ensure the warehouse exists, create it if it doesn't"""
+        try:
+            # Check if warehouse exists
+            cursor.execute(f"SHOW WAREHOUSES LIKE '{self.warehouse}'")
+            result = cursor.fetchone()
+            
+            if not result:
+                # Warehouse doesn't exist, create it
+                logger.info(f"Creating Snowflake warehouse: {self.warehouse}")
+                create_warehouse_sql = f"""
+                CREATE WAREHOUSE IF NOT EXISTS {self.warehouse}
+                WITH 
+                    WAREHOUSE_SIZE = 'XSMALL'
+                    AUTO_SUSPEND = 60
+                    AUTO_RESUME = TRUE
+                    INITIALLY_SUSPENDED = TRUE
+                    COMMENT = 'Metrify Smart Metering Data Warehouse'
+                """
+                cursor.execute(create_warehouse_sql)
+                logger.info(f"Created warehouse: {self.warehouse}")
+            else:
+                logger.debug(f"Warehouse {self.warehouse} already exists")
+                
+        except Exception as e:
+            logger.error(f"Failed to ensure warehouse exists: {str(e)}")
+            raise
+    
+    async def _ensure_database_exists(self, cursor) -> None:
+        """Ensure the database exists, create it if it doesn't"""
+        try:
+            # Check if database exists
+            cursor.execute(f"SHOW DATABASES LIKE '{self.database}'")
+            result = cursor.fetchone()
+            
+            if not result:
+                # Database doesn't exist, create it
+                logger.info(f"Creating Snowflake database: {self.database}")
+                cursor.execute(f"CREATE DATABASE IF NOT EXISTS {self.database}")
+                logger.info(f"Created database: {self.database}")
+            else:
+                logger.debug(f"Database {self.database} already exists")
+                
+        except Exception as e:
+            logger.error(f"Failed to ensure database exists: {str(e)}")
+            raise
+    
+    async def _ensure_schema_exists(self, cursor) -> None:
+        """Ensure the schema exists, create it if it doesn't"""
+        try:
+            # Use the database first
+            cursor.execute(f"USE DATABASE {self.database}")
+            
+            # Check if schema exists
+            cursor.execute(f"SHOW SCHEMAS LIKE '{self.schema}'")
+            result = cursor.fetchone()
+            
+            if not result:
+                # Schema doesn't exist, create it
+                logger.info(f"Creating Snowflake schema: {self.database}.{self.schema}")
+                cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {self.schema}")
+                logger.info(f"Created schema: {self.database}.{self.schema}")
+            else:
+                logger.debug(f"Schema {self.database}.{self.schema} already exists")
+                
+        except Exception as e:
+            logger.error(f"Failed to ensure schema exists: {str(e)}")
+            raise
+    
+    async def _ensure_core_tables_exist(self, cursor) -> None:
+        """Ensure core tables exist, create them if they don't"""
+        try:
+            # Use the database and schema
+            cursor.execute(f"USE DATABASE {self.database}")
+            cursor.execute(f"USE SCHEMA {self.schema}")
+            
+            # Define core tables for the Metrify system
+            core_tables = {
+                'smart_meters': """
+                    CREATE TABLE IF NOT EXISTS smart_meters (
+                        id VARCHAR(36) PRIMARY KEY,
+                        meter_id VARCHAR(255) UNIQUE NOT NULL,
+                        latitude DECIMAL(10, 8) NOT NULL,
+                        longitude DECIMAL(11, 8) NOT NULL,
+                        address TEXT NOT NULL,
+                        manufacturer VARCHAR(255) NOT NULL,
+                        model VARCHAR(255) NOT NULL,
+                        installation_date TIMESTAMP_NTZ NOT NULL,
+                        status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+                        quality_tier VARCHAR(50) NOT NULL DEFAULT 'UNKNOWN',
+                        installed_at TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                        last_reading_at TIMESTAMP_NTZ,
+                        created_at TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                        updated_at TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                        firmware_version VARCHAR(50) NOT NULL DEFAULT '1.0.0',
+                        metadata VARIANT,
+                        version INTEGER NOT NULL DEFAULT 0
+                    )
+                """,
+                'meter_readings': """
+                    CREATE TABLE IF NOT EXISTS meter_readings (
+                        id VARCHAR(36) PRIMARY KEY,
+                        meter_id VARCHAR(255) NOT NULL,
+                        timestamp TIMESTAMP_NTZ NOT NULL,
+                        voltage DECIMAL(10, 3) NOT NULL,
+                        current DECIMAL(10, 3) NOT NULL,
+                        power_factor DECIMAL(5, 3) NOT NULL,
+                        frequency DECIMAL(5, 2) NOT NULL,
+                        active_power DECIMAL(12, 3) NOT NULL,
+                        reactive_power DECIMAL(12, 3) NOT NULL,
+                        apparent_power DECIMAL(12, 3) NOT NULL,
+                        data_quality_score DECIMAL(3, 2) NOT NULL DEFAULT 1.0,
+                        is_anomaly BOOLEAN NOT NULL DEFAULT FALSE,
+                        anomaly_type VARCHAR(100),
+                        created_at TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                        FOREIGN KEY (meter_id) REFERENCES smart_meters(meter_id)
+                    )
+                """,
+                'grid_operators': """
+                    CREATE TABLE IF NOT EXISTS grid_operators (
+                        id VARCHAR(36) PRIMARY KEY,
+                        operator_id VARCHAR(255) UNIQUE NOT NULL,
+                        name VARCHAR(255) NOT NULL,
+                        operator_type VARCHAR(100) NOT NULL,
+                        latitude DECIMAL(10, 8) NOT NULL,
+                        longitude DECIMAL(11, 8) NOT NULL,
+                        address TEXT NOT NULL,
+                        contact_email VARCHAR(255),
+                        contact_phone VARCHAR(50),
+                        website VARCHAR(255),
+                        status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+                        created_at TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                        updated_at TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                        grid_capacity_mw DECIMAL(12, 2),
+                        voltage_level_kv DECIMAL(8, 2),
+                        coverage_area_km2 DECIMAL(12, 2),
+                        operator_metadata VARIANT,
+                        version INTEGER NOT NULL DEFAULT 0
+                    )
+                """,
+                'weather_stations': """
+                    CREATE TABLE IF NOT EXISTS weather_stations (
+                        id VARCHAR(36) PRIMARY KEY,
+                        station_id VARCHAR(255) UNIQUE NOT NULL,
+                        name VARCHAR(255) NOT NULL,
+                        station_type VARCHAR(100) NOT NULL,
+                        latitude DECIMAL(10, 8) NOT NULL,
+                        longitude DECIMAL(11, 8) NOT NULL,
+                        address TEXT NOT NULL,
+                        operator VARCHAR(255) NOT NULL,
+                        contact_email VARCHAR(255),
+                        contact_phone VARCHAR(50),
+                        status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+                        created_at TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                        updated_at TIMESTAMP_NTZ NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+                        total_observations INTEGER NOT NULL DEFAULT 0,
+                        average_quality_score DECIMAL(3, 2) NOT NULL DEFAULT 1.0,
+                        last_observation_at TIMESTAMP_NTZ,
+                        version INTEGER NOT NULL DEFAULT 0
+                    )
+                """
+            }
+            
+            # Create each table if it doesn't exist
+            for table_name, create_sql in core_tables.items():
+                try:
+                    cursor.execute(create_sql)
+                    logger.debug(f"Ensured table {table_name} exists")
+                except Exception as e:
+                    logger.warning(f"Failed to create table {table_name}: {str(e)}")
+                    # Continue with other tables even if one fails
+                    
+            logger.info("Core Snowflake tables setup completed")
+            
+        except Exception as e:
+            logger.error(f"Failed to ensure core tables exist: {str(e)}")
+            raise
     
     async def execute_query(self, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """
@@ -362,3 +577,50 @@ class SnowflakeClient:
         except Exception as e:
             logger.error(f"Failed to get metrics: {str(e)}")
             return {"connected": self._is_connected, "error": str(e)}
+    
+    async def insert_data(self, database: str, schema: str, table: str, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Insert data into Snowflake table"""
+        try:
+            await self.connect()
+            
+            if not data:
+                return {"inserted_rows": 0}
+            
+            # Get column names from first record
+            columns = list(data[0].keys())
+            placeholders = ", ".join(["%s"] * len(columns))
+            column_names = ", ".join(columns)
+            
+            # Build INSERT query
+            query = f"""
+            INSERT INTO {database}.{schema}.{table} ({column_names})
+            VALUES ({placeholders})
+            """
+            
+            # Prepare data for insertion
+            values_list = []
+            for record in data:
+                values = [record.get(col) for col in columns]
+                values_list.append(values)
+            
+            # Execute batch insert
+            cursor = self._connection.cursor()
+            cursor.executemany(query, values_list)
+            cursor.close()
+            
+            return {"inserted_rows": len(values_list)}
+            
+        except Exception as e:
+            logger.error(f"Error inserting data to Snowflake: {e}")
+            raise InfrastructureError(f"Failed to insert data to Snowflake: {e}")
+    
+    async def health_check(self) -> bool:
+        """Perform health check on Snowflake connection"""
+        try:
+            await self.connect()
+            # Try to execute a simple query
+            result = await self.execute_query("SELECT 1")
+            return len(result) > 0
+        except Exception as e:
+            logger.error(f"Snowflake health check failed: {e}")
+            return False

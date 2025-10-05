@@ -24,19 +24,19 @@ class S3Client:
     Handles file uploads, downloads, and data lake operations
     """
     
-    def __init__(
-        self,
-        bucket_name: str,
-        region_name: str = "us-east-1",
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        endpoint_url: Optional[str] = None
-    ):
-        self.bucket_name = bucket_name
-        self.region_name = region_name
-        self.aws_access_key_id = aws_access_key_id
-        self.aws_secret_access_key = aws_secret_access_key
-        self.endpoint_url = endpoint_url
+    def __init__(self, config):
+        """
+        Initialize S3 client with configuration
+        
+        Args:
+            config: S3Config object containing S3 connection details
+        """
+        self.config = config
+        self.bucket_name = config.bucket
+        self.region_name = config.default_region
+        self.aws_access_key_id = config.access_key_id
+        self.aws_secret_access_key = config.secret_access_key
+        self.endpoint_url = config.endpoint_url
         
         self._s3_client = None
         self._is_connected = False
@@ -44,21 +44,26 @@ class S3Client:
     async def connect(self) -> None:
         """Connect to S3 service"""
         try:
-            session = boto3.Session(
-                aws_access_key_id=self.aws_access_key_id,
-                aws_secret_access_key=self.aws_secret_access_key,
-                region_name=self.region_name
-            )
+            # Use IAM role if no access keys provided, otherwise use provided credentials
+            if self.aws_access_key_id and self.aws_secret_access_key:
+                session = boto3.Session(
+                    aws_access_key_id=self.aws_access_key_id,
+                    aws_secret_access_key=self.aws_secret_access_key,
+                    region_name=self.region_name
+                )
+            else:
+                # Use IAM role or default credentials
+                session = boto3.Session(region_name=self.region_name)
             
             self._s3_client = session.client(
                 's3',
                 endpoint_url=self.endpoint_url
             )
             
-            # Test connection by checking if bucket exists
-            self._s3_client.head_bucket(Bucket=self.bucket_name)
+            # Ensure all required buckets exist
+            await self._ensure_buckets_exist()
             self._is_connected = True
-            logger.info(f"Connected to S3 bucket: {self.bucket_name}")
+            logger.info(f"Connected to S3 and ensured all buckets exist")
             
         except NoCredentialsError:
             logger.error("AWS credentials not found")
@@ -74,6 +79,44 @@ class S3Client:
         except Exception as e:
             logger.error(f"Unexpected error connecting to S3: {str(e)}")
             raise InfrastructureError(f"Unexpected error: {str(e)}", service="s3")
+    
+    async def _ensure_buckets_exist(self) -> None:
+        """Ensure all required S3 buckets exist, create them if they don't"""
+        try:
+            # Get all required bucket names from config
+            required_buckets = [
+                self.config.bucket,  # Main data lake bucket
+                self.config.archive_bucket,  # Archive bucket
+                self.config.backup_bucket,  # Backup bucket
+            ]
+            
+            # Remove duplicates and None values
+            required_buckets = list(set([b for b in required_buckets if b]))
+            
+            for bucket_name in required_buckets:
+                try:
+                    # Check if bucket exists
+                    self._s3_client.head_bucket(Bucket=bucket_name)
+                    logger.debug(f"Bucket {bucket_name} already exists")
+                except ClientError as e:
+                    error_code = e.response['Error']['Code']
+                    if error_code == '404':
+                        # Bucket doesn't exist, create it
+                        logger.info(f"Creating S3 bucket: {bucket_name}")
+                        self._s3_client.create_bucket(
+                            Bucket=bucket_name,
+                            CreateBucketConfiguration={
+                                'LocationConstraint': self.region_name
+                            } if self.region_name != 'us-east-1' else {}
+                        )
+                        logger.info(f"✅ Created S3 bucket: {bucket_name}")
+                    else:
+                        logger.error(f"Error checking bucket {bucket_name}: {e}")
+                        raise
+                        
+        except Exception as e:
+            logger.error(f"Error ensuring buckets exist: {e}")
+            raise InfrastructureError(f"Failed to ensure buckets exist: {e}", service="s3")
     
     async def upload_file(
         self,
@@ -450,3 +493,17 @@ class S3Client:
         except Exception as e:
             logger.error(f"Failed to get metrics: {str(e)}")
             return {"connected": self._is_connected, "error": str(e)}
+    
+    async def health_check(self) -> bool:
+        """Perform health check on S3 connection"""
+        try:
+            await self.connect()
+            # Try to list objects to verify connection
+            self._s3_client.list_objects_v2(
+                Bucket=self.bucket_name,
+                MaxKeys=1
+            )
+            return True
+        except Exception as e:
+            logger.error(f"S3 health check failed: {e}")
+            return False
